@@ -320,8 +320,7 @@ public class AionHub {
                 LOG.error("Event manager is null !!!");
                 System.exit(-1);
             }
-
-            LOG.info("loaded genesis block <num={}, root={}>", 0, ByteUtil.toHexString(genesis.getStateRoot()));
+            LOG.info("loaded genesis block <num={}, hash={}, root={}>", 0, ByteUtil.toHexString(genesis.getHash()), ByteUtil.toHexString(genesis.getStateRoot()));
 
         } else {
 

@@ -94,15 +94,6 @@ public class GenesisBlockLoader {
                         genesisBuilder.withTimestamp((new BigInteger(timestamp)).longValueExact());
                 }
 
-                if (mapper.has("extraData")) {
-                    String extraData = mapper.getString("extraData");
-                    if (extraData.substring(0, 2).equals("0x")) {
-                        genesisBuilder.withExtraData(ByteUtil.hexStringToBytes(extraData));
-                    } else {
-                        genesisBuilder.withExtraData(extraData.getBytes());
-                    }
-                }
-
                 if (mapper.has("energyLimit")) {
                     String extraData = mapper.getString("energyLimit");
                     if (extraData.substring(0, 2).equals("0x")) {
@@ -111,6 +102,15 @@ public class GenesisBlockLoader {
                     } else {
                         genesisBuilder.withEnergyLimit(new BigInteger(extraData).longValueExact());
                     }
+                }
+
+                if (mapper.has("chainId")) {
+                    String chainId = mapper.getString("chainId");
+
+                    if (chainId.substring(0, 2).equals("0x"))
+                        genesisBuilder.withChainID(Integer.parseInt(chainId.substring(2), 16));
+                    else
+                        genesisBuilder.withChainID(Integer.parseInt(chainId));
                 }
 
                 if (mapper.has("networkBalanceAllocs")) {

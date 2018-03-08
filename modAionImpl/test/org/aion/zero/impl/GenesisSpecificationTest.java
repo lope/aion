@@ -111,10 +111,10 @@ public class GenesisSpecificationTest {
             .withCoinbase(Address.wrap(overrideAddress))
             .withDifficulty(overrideValue.toByteArray())
             .withEnergyLimit(overrideValue.longValue())
-            .withExtraData(overrideHash)
             .withNonce(overrideHash)
             .withNumber(overrideValue.longValue())
             .withTimestamp(overrideValue.longValue())
+            .withChainID(65535)
             .addPreminedAccount(Address.wrap(overrideAddress), defaultAccountState);
         
         AionGenesis genesis = genesisBuilder.build();
@@ -130,7 +130,8 @@ public class GenesisSpecificationTest {
         assertThat(genesis.getReceiptsRoot()).isEqualTo(HashUtil.EMPTY_TRIE_HASH);
         assertThat(genesis.getCumulativeDifficulty()).isEqualTo(overrideValue);
         assertThat(genesis.getTransactionsList().isEmpty()).isEqualTo(true);
-        
-        assertThat(genesis.getPremine().keySet().equals(accountStateSet));
+
+        assertThat(genesis.getChainId()).isEqualTo(65535);
+        assertThat(genesis.getPremine().keySet()).isEqualTo(accountStateSet);
     }
 }

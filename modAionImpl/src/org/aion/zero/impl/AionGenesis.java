@@ -38,6 +38,7 @@ import org.aion.mcf.trie.Trie;
 import org.aion.mcf.types.AbstractBlockHeader;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -109,14 +110,6 @@ public class AionGenesis extends AionBlock {
     protected static final long GENESIS_TIMESTAMP = 0;
 
     /**
-     * Corresponds to {@link AbstractBlockHeader#getExtraData()} extra data
-     * (limited to 32 bytes), we arbitrarily set this to 0.
-     * 
-     * TODO: we may want to put something meaningful here
-     */
-    protected static final byte[] GENESIS_EXTRA_DATA = new byte[32];
-
-    /**
      * Corresponds to {@link AbstractBlockHeader#getNonce()} nonce of the block,
      * we arbitrarily set this to 0 for now
      */
@@ -177,6 +170,10 @@ public class AionGenesis extends AionBlock {
         this.premine = premine;
     }
 
+    public int getChainId() {
+        return ByteBuffer.wrap(this.getExtraData()).position(30).getShort() & 0xFFFF;
+    }
+
     public void setNetworkBalance(Map<Integer, BigInteger> networkBalances) {
         this.networkBalances = networkBalances;
     }
@@ -204,12 +201,33 @@ public class AionGenesis extends AionBlock {
         protected byte[] difficulty;
         protected Long number;
         protected Long timestamp;
-        protected byte[] extraData;
         protected byte[] nonce;
         protected Long energyLimit;
 
+        /*
+         * Corresponds to {@link AbstractBlockHeader#getExtraData()} extra data
+         * (limited to 32 bytes), we arbitrarily set this to 0 on default.
+         *
+         * With the proposed changes to chainId, the extraData field is now segmented
+         * into the following:
+         *
+         * [30-byte FREE | 2-byte chainId (uint16)]
+         */
+        protected int chainId;
+
         protected Map<Integer, BigInteger> networkBalance;
         protected Map<Address, AccountState> premined;
+
+        public Builder withChainID(final int chainId) {
+            if (chainId < 0)
+                throw new IllegalArgumentException("chainId cannot be negative");
+
+            if (chainId > 0xFFFF)
+                throw new IllegalArgumentException("chainId cannot be larger than uint16 (0xFFFF)");
+
+            this.chainId = chainId;
+            return this;
+        }
 
         public Builder withParentHash(final byte[] parentHash) {
             this.parentHash = parentHash;
@@ -239,11 +257,6 @@ public class AionGenesis extends AionBlock {
                 throw new IllegalArgumentException("timestamp cannot be negative");
 
             this.timestamp = timestamp;
-            return this;
-        }
-
-        public Builder withExtraData(final byte[] extraData) {
-            this.extraData = extraData;
             return this;
         }
 
@@ -311,9 +324,6 @@ public class AionGenesis extends AionBlock {
             if (this.timestamp == null)
                 this.timestamp = GENESIS_TIMESTAMP;
 
-            if (this.extraData == null)
-                this.extraData = GENESIS_EXTRA_DATA;
-
             if (this.nonce == null)
                 this.nonce = GENESIS_NONCE;
 
@@ -326,8 +336,13 @@ public class AionGenesis extends AionBlock {
             if (this.networkBalance == null)
                 this.networkBalance = GENESIS_NETWORK_BALANCE;
 
+            // chainId is encoded as part of the extraData field
+            // specifically it refers to the last 2 bytes and forms
+            // a uint16
+            byte[] extraData = generateExtraData();
+
             AionGenesis genesis = new AionGenesis(this.parentHash, this.coinbase, this.logsBloom, this.difficulty,
-                    this.number, this.timestamp, this.extraData, this.nonce, this.energyLimit);
+                    this.number, this.timestamp, extraData, this.nonce, this.energyLimit);
 
             // temporary solution, so as not to disrupt the constructors
             genesis.setPremine(this.premined);
@@ -362,6 +377,15 @@ public class AionGenesis extends AionBlock {
             }
 
             return worldTrie.getRootHash();
+        }
+
+        protected byte[] generateExtraData() {
+            byte[] extraData = new byte[32];
+            byte[] idBytes = new byte[] {
+                    (byte) ((this.chainId >> 8) & 0xFF), (byte) (this.chainId & 0xFF)
+            };
+            System.arraycopy(idBytes, 0, extraData, 30, 2);
+            return extraData;
         }
     }
 }
