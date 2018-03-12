@@ -200,4 +200,10 @@ public abstract class AbstractDB implements IByteArrayKeyValueDatabase {
      */
     public abstract boolean commitCache(Map<ByteArrayWrapper, byte[]> cache);
 
+    // IByteArrayKeyValueDatabase functionality ------------------------------------------------------------------------
+
+    @Override
+    public boolean isRepository() {
+        return false;
+    }
 }

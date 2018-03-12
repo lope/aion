@@ -25,18 +25,12 @@
  *
  * Contributors to the aion source files in decreasing order of code volume:
  *     Aion foundation.
- *     <ether.camp> team through the ethereumJ library.
- *     Ether.Camp Inc. (US) team through Ethereum Harmony.
- *     John Tromp through the Equihash solver.
- *     Samuel Neves through the BLAKE2 implementation.
- *     Zcash project team.
- *     Bitcoinj team.
  ******************************************************************************/
 package org.aion.base.db;
 
 import java.util.Map;
 
-public interface IByteArrayKeyValueRepository extends IByteArrayKeyValueDatabase {
+public interface IByteArrayKeyValueRepository {
 
     void archive(Map<byte[], byte[]> archivedData);
     void swap();

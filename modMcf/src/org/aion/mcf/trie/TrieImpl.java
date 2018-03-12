@@ -20,29 +20,6 @@
  *******************************************************************************/
 package org.aion.mcf.trie;
 
-import static java.util.Arrays.copyOfRange;
-import static org.aion.base.util.ByteArrayWrapper.wrap;
-import static org.aion.base.util.ByteUtil.EMPTY_BYTE_ARRAY;
-import static org.aion.base.util.ByteUtil.matchingNibbleLength;
-import static org.aion.crypto.HashUtil.EMPTY_TRIE_HASH;
-import static org.aion.rlp.CompactEncoder.binToNibbles;
-import static org.aion.rlp.CompactEncoder.hasTerminator;
-import static org.aion.rlp.CompactEncoder.packNibbles;
-import static org.aion.rlp.CompactEncoder.unpackToNibbles;
-import static org.aion.rlp.RLP.calcElementPrefixSize;
-import static org.spongycastle.util.Arrays.concatenate;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.base.util.FastByteComparisons;
@@ -52,6 +29,18 @@ import org.aion.rlp.RLP;
 import org.aion.rlp.RLPItem;
 import org.aion.rlp.RLPList;
 import org.aion.rlp.Value;
+
+import java.io.*;
+import java.util.*;
+
+import static java.util.Arrays.copyOfRange;
+import static org.aion.base.util.ByteArrayWrapper.wrap;
+import static org.aion.base.util.ByteUtil.EMPTY_BYTE_ARRAY;
+import static org.aion.base.util.ByteUtil.matchingNibbleLength;
+import static org.aion.crypto.HashUtil.EMPTY_TRIE_HASH;
+import static org.aion.rlp.CompactEncoder.*;
+import static org.aion.rlp.RLP.calcElementPrefixSize;
+import static org.spongycastle.util.Arrays.concatenate;
 
 /**
  * The modified Merkle Patricia tree (trie) provides a persistent data structure
@@ -284,7 +273,7 @@ public class TrieImpl implements Trie {
         }
 
         if (isEmptyNode(node)) {
-            Object[] newNode = new Object[] { packNibbles(key), value };
+            Object[] newNode = new Object[]{packNibbles(key), value};
             return this.putToCache(newNode);
         }
 
@@ -302,7 +291,7 @@ public class TrieImpl implements Trie {
 
             // Matching key pair (ie. there's already an object with this key)
             if (Arrays.equals(k, key)) {
-                Object[] newNode = new Object[] { packNibbles(key), value };
+                Object[] newNode = new Object[]{packNibbles(key), value};
                 return this.putToCache(newNode);
             }
 
@@ -335,7 +324,7 @@ public class TrieImpl implements Trie {
                 // End of the chain, return
                 return newHash;
             } else {
-                Object[] newNode = new Object[] { packNibbles(copyOfRange(key, 0, matchingLength)), newHash };
+                Object[] newNode = new Object[]{packNibbles(copyOfRange(key, 0, matchingLength)), newHash};
                 return this.putToCache(newNode);
             }
         } else {
@@ -386,9 +375,9 @@ public class TrieImpl implements Trie {
                 Object newNode;
                 if (child.length() == PAIR_SIZE) {
                     byte[] newKey = concatenate(k, unpackToNibbles(child.get(0).asBytes()));
-                    newNode = new Object[] { packNibbles(newKey), child.get(1).asObj() };
+                    newNode = new Object[]{packNibbles(newKey), child.get(1).asObj()};
                 } else {
-                    newNode = new Object[] { currentNode.get(0), hash };
+                    newNode = new Object[]{currentNode.get(0), hash};
                 }
                 markRemoved(HashUtil.h256(currentNode.encode()));
                 return this.putToCache(newNode);
@@ -415,14 +404,14 @@ public class TrieImpl implements Trie {
 
             Object[] newNode = null;
             if (amount == 16) {
-                newNode = new Object[] { packNibbles(new byte[] { 16 }), itemList[amount] };
+                newNode = new Object[]{packNibbles(new byte[]{16}), itemList[amount]};
             } else if (amount >= 0) {
                 Value child = this.getNode(itemList[amount]);
                 if (child.length() == PAIR_SIZE) {
-                    key = concatenate(new byte[] { amount }, unpackToNibbles(child.get(0).asBytes()));
-                    newNode = new Object[] { packNibbles(key), child.get(1).asObj() };
+                    key = concatenate(new byte[]{amount}, unpackToNibbles(child.get(0).asBytes()));
+                    newNode = new Object[]{packNibbles(key), child.get(1).asObj()};
                 } else if (child.length() == LIST_SIZE) {
-                    newNode = new Object[] { packNibbles(new byte[] { amount }), itemList[amount] };
+                    newNode = new Object[]{packNibbles(new byte[]{amount}), itemList[amount]};
                 }
             } else {
                 newNode = itemList;
@@ -749,6 +738,12 @@ public class TrieImpl implements Trie {
             }
             return true;
         }
+    }
+
+    @Override
+    public Map<byte[], byte[]> getFullStateFromRoot() {
+        // TODO-AR: implement
+        return null;
     }
 
 }

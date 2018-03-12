@@ -169,9 +169,11 @@ public abstract class AbstractRepository<BLK extends AbstractBlock<BH, ? extends
              * Setup datastores
              */
             sharedProps.setProperty("db_name", STATE_DB);
+            sharedProps.setProperty("split","true");
             this.stateDatabase = connectAndOpen(sharedProps);
             databaseGroup.add(stateDatabase);
 
+            sharedProps.setProperty("split","false");
             sharedProps.setProperty("db_name", TRANSACTION_DB);
             this.transactionDatabase = connectAndOpen(sharedProps);
             databaseGroup.add(transactionDatabase);

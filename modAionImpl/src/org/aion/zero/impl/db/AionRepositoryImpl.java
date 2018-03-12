@@ -262,6 +262,12 @@ public class AionRepositoryImpl extends AbstractRepository<AionBlock, A0BlockHea
         }
     }
 
+    public void archive() {
+        if (stateDatabase.isRepository()){
+            ((IByteArrayKeyValueRepository)stateDatabase).archive(worldState.getFullStateFromRoot());
+        }
+    }
+
     @Override
     public void rollback() {
         throw new UnsupportedOperationException();

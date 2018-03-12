@@ -113,7 +113,8 @@ public abstract class DatabaseFactory {
                 if (enableHeapCache) {
                     return new LevelDBWithCache(dbName, dbPath, enableDbCache, enableDbCompression, enableAutoCommit,
                             info.getProperty(PROP_MAX_HEAP_CACHE_SIZE),
-                            Boolean.parseBoolean(info.getProperty(PROP_ENABLE_HEAP_CACHE_STATS)));
+                            Boolean.parseBoolean(info.getProperty(PROP_ENABLE_HEAP_CACHE_STATS)),
+                            Boolean.parseBoolean(info.getProperty("split")));
                 } else {
                     return new LevelDB(dbName, dbPath, enableDbCache, enableDbCompression);
                 }

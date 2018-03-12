@@ -20,6 +20,8 @@
  *******************************************************************************/
 package org.aion.mcf.trie;
 
+import java.util.Map;
+
 /**
  * Trie interface for the main data structure in Ethereum
  * which is used to store both the account state and storage of each account.
@@ -94,4 +96,5 @@ public interface Trie {
 
     boolean validate();
 
+    Map<byte[],byte[]> getFullStateFromRoot();
 }

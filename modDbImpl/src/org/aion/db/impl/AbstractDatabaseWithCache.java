@@ -40,8 +40,8 @@ import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
 import com.google.common.primitives.Longs;
 import org.aion.base.db.IByteArrayKeyValueDatabase;
+import org.aion.base.db.IByteArrayKeyValueRepository;
 import org.aion.base.util.ByteArrayWrapper;
-import org.aion.db.impl.AbstractDB;
 import org.aion.log.AionLoggerFactory;
 import org.aion.log.LogEnum;
 import org.slf4j.Logger;
@@ -57,7 +57,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author Alexandra Roatis
  * @implNote Assumes persistent database. Overwrite method if this is not the case.
  */
-public abstract class AbstractDatabaseWithCache implements IByteArrayKeyValueDatabase {
+public abstract class AbstractDatabaseWithCache implements IByteArrayKeyValueDatabase, IByteArrayKeyValueRepository {
 
     private static final Logger LOG = AionLoggerFactory.getLogger(LogEnum.DB.name());
 
@@ -209,7 +209,7 @@ public abstract class AbstractDatabaseWithCache implements IByteArrayKeyValueDat
         boolean open;
 
         try {
-            LOG.debug("init heap cache {} for {}", this.toString(), database.toString());
+            LOG.debug("init heap cache {}", this.toString());
 
             open = database.open();
 
@@ -383,7 +383,7 @@ public abstract class AbstractDatabaseWithCache implements IByteArrayKeyValueDat
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + ":" + propertiesInfo();
+        return this.getClass().getSimpleName() + ":" + propertiesInfo() + " for " + database.toString();
     }
 
     private String propertiesInfo() {
@@ -613,5 +613,30 @@ public abstract class AbstractDatabaseWithCache implements IByteArrayKeyValueDat
 
         // the dirty entries now match the storage
         dirtyEntries.clear();
+    }
+
+    // IByteArrayKeyValueDatabase && IByteArrayKeyValueRepository functionality ----------------------------------------
+
+    @Override
+    public boolean isRepository() {
+        return database.isRepository();
+    }
+
+    @Override
+    public void archive(Map<byte[], byte[]> archivedData) {
+        if (isRepository()) {
+            ((IByteArrayKeyValueRepository) database).archive(archivedData);
+        } else {
+            LOG.error("Archive called on database without the functionality");
+        }
+    }
+
+    @Override
+    public void swap() {
+        if (isRepository()) {
+            ((IByteArrayKeyValueRepository) database).swap();
+        } else {
+            LOG.error("Swap called on database without the functionality");
+        }
     }
 }

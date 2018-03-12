@@ -1,3 +1,31 @@
+/*******************************************************************************
+ * Copyright (c) 2017-2018 Aion foundation.
+ *
+ *     This file is part of the aion network project.
+ *
+ *     The aion network project is free software: you can redistribute it
+ *     and/or modify it under the terms of the GNU General Public License
+ *     as published by the Free Software Foundation, either version 3 of
+ *     the License, or any later version.
+ *
+ *     The aion network project is distributed in the hope that it will
+ *     be useful, but WITHOUT ANY WARRANTY; without even the implied
+ *     warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *     See the GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License
+ *     along with the aion network project source files.
+ *     If not, see <https://www.gnu.org/licenses/>.
+ *
+ *     The aion network project leverages useful source code from other
+ *     open source projects. We greatly appreciate the effort that was
+ *     invested in these projects and we thank the individual contributors
+ *     for their work. For provenance information and contributors
+ *     please see <https://github.com/aionnetwork/aion/wiki/Contributors>.
+ *
+ * Contributors to the aion source files in decreasing order of code volume:
+ *     Aion foundation.
+ ******************************************************************************/
 package org.aion.db.impl;
 
 import org.aion.base.db.IByteArrayKeyValueRepository;
@@ -13,9 +41,9 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
     private static final Logger LOG = AionLoggerFactory.getLogger(LogEnum.DB.name());
 
     protected AbstractDB[] data;
-    protected AbstractDB rebuildDB;
-    protected AbstractDB mainDB;
-    protected AbstractDB supportDB;
+    protected AbstractDB rebuild;
+    protected AbstractDB primary;
+    protected AbstractDB support;
 
     protected String NAME_DATA_1 = "data1";
     protected String NAME_DATA_2 = "data2";
@@ -30,11 +58,11 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
 
     private void setupDatabaseHierarchy() {
 
-        if (rebuildDB.isEmpty()) {
-            rebuildDB.put(mainDatabaseKey, new byte[]{1});
+        if (rebuild.isEmpty()) {
+            rebuild.put(mainDatabaseKey, new byte[]{1});
         }
 
-        Optional<byte[]> current = rebuildDB.get(mainDatabaseKey);
+        Optional<byte[]> current = rebuild.get(mainDatabaseKey);
 
         if (!current.isPresent()) {
             LOG.error("Missing key");
@@ -47,18 +75,18 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
             }
 
             if (currentDb[0] == 1) {
-                mainDB = data[0];
-                supportDB = data[1];
+                primary = data[0];
+                support = data[1];
             } else {
-                mainDB = data[1];
-                supportDB = data[0];
+                primary = data[1];
+                support = data[0];
             }
         }
     }
 
     @Override
     public boolean commitCache(Map<ByteArrayWrapper, byte[]> cache) {
-        return mainDB.commitCache(cache);
+        return primary.commitCache(cache);
     }
 
     // IDatabase functionality -----------------------------------------------------------------------------------------
@@ -83,10 +111,14 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
             LOG.debug("init split database {}", this.toString());
 
             // correctly open only when all 3 components are open
-            open = rebuildDB.open() && data[0].open() && data[1].open();
+            open =  data[0].open() && data[1].open() && rebuild.open();
 
             if (open) {
                 setupDatabaseHierarchy();
+            } else {
+                data[0].close();
+                data[1].close();
+                rebuild.close();
             }
         } finally {
             // releasing write lock
@@ -106,63 +138,14 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
 
         try {
             // close databases
-            rebuildDB.close();
+            rebuild.close();
             data[0].close();
             data[1].close();
         } finally {
             // ensuring the db is null after close was called
-            mainDB = null;
-            supportDB = null;
+            primary = null;
+            support = null;
 
-            // releasing write lock
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public void archive(Map<byte[], byte[]> archivedData) {
-        // acquire write lock
-        lock.writeLock().lock();
-
-        try {
-            // stored data used for rebuilding missing info
-            rebuildDB.putBatch(archivedData);
-        } finally {
-            // releasing write lock
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public void swap() {
-        // acquire write lock
-        lock.writeLock().lock();
-
-        try {
-            Optional<byte[]> current = rebuildDB.get(mainDatabaseKey);
-
-            if (!current.isPresent() || current.get()[0] == 2) {
-                rebuildDB.put(mainDatabaseKey, new byte[]{1});
-
-                // set new main database
-                mainDB = data[0];
-
-                // delete previous database contents
-                mainDB.deleteBatch(mainDB.keys());
-
-                supportDB = data[1];
-            } else {
-                rebuildDB.put(mainDatabaseKey, new byte[]{2});
-
-                // set new main database
-                mainDB = data[1];
-
-                // delete previous database contents
-                mainDB.deleteBatch(mainDB.keys());
-
-                supportDB = data[0];
-            }
-        } finally {
             // releasing write lock
             lock.writeLock().unlock();
         }
@@ -176,7 +159,7 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
         // acquire read lock
         lock.readLock().lock();
 
-        boolean open = rebuildDB.isOpen() && data[0].isOpen() && data[1].isOpen();
+        boolean open = rebuild.isOpen() && data[0].isOpen() && data[1].isOpen();
 
         // releasing read lock
         lock.readLock().unlock();
@@ -192,24 +175,35 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
 
     @Override
     public boolean isPersistent() {
-        return rebuildDB.isPersistent() && data[0].isPersistent() && data[1].isPersistent();
+        return rebuild.isPersistent() && data[0].isPersistent() && data[1].isPersistent();
     }
 
     @Override
     public boolean isCreatedOnDisk() {
-        return rebuildDB.isCreatedOnDisk() && data[0].isCreatedOnDisk() && data[1].isCreatedOnDisk();
+        return rebuild.isCreatedOnDisk() && data[0].isCreatedOnDisk() && data[1].isCreatedOnDisk();
     }
 
     @Override
     public long approximateSize() {
-        return rebuildDB.approximateSize() + data[0].approximateSize() + data[1].approximateSize();
+        return rebuild.approximateSize() + data[0].approximateSize() + data[1].approximateSize();
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + ":" + databaseInfo();
+    }
+
+    private String databaseInfo() {
+        return "<" + data[0].toString() + //
+                "," + data[1].toString() + //
+                "," + rebuild.toString() + ">";
     }
 
     // IKeyValueStore functionality ------------------------------------------------------------------------------------
 
     @Override
     public boolean isEmpty() {
-        return rebuildDB.isEmpty() && data[0].isEmpty() && data[1].isEmpty();
+        return rebuild.isEmpty() && data[0].isEmpty() && data[1].isEmpty();
     }
 
     @Override
@@ -222,7 +216,7 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
         try {
             check();
 
-            set.addAll(rebuildDB.keys());
+            set.addAll(rebuild.keys());
             set.addAll(data[0].keys());
             set.addAll(data[1].keys());
         } finally {
@@ -248,16 +242,16 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
             check();
 
             // first check main database
-            v = mainDB.get(k);
+            v = primary.get(k);
 
             // next check support database
             if (!v.isPresent()) {
-                v = supportDB.get(k);
+                v = support.get(k);
             }
 
             // finally check rebuild database
             if (!v.isPresent()) {
-                v = rebuildDB.get(k);
+                v = rebuild.get(k);
             }
 
         } finally {
@@ -278,7 +272,7 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
         try {
             check();
 
-            mainDB.put(k, v);
+            primary.put(k, v);
         } finally {
             // releasing write lock
             lock.writeLock().unlock();
@@ -300,7 +294,7 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
         try {
             check();
 
-            mainDB.putBatch(inputMap);
+            primary.putBatch(inputMap);
         } finally {
             // releasing write lock
             lock.writeLock().unlock();
@@ -317,12 +311,67 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
         try {
             check();
 
-            mainDB.deleteBatch(keys);
+            primary.deleteBatch(keys);
         } finally {
             // releasing write lock
             lock.writeLock().unlock();
         }
     }
 
+    // IByteArrayKeyValueDatabase && IByteArrayKeyValueRepository functionality ----------------------------------------
+
+    @Override
+    public boolean isRepository() {
+        return true;
+    }
+
+    @Override
+    public void archive(Map<byte[], byte[]> archivedData) {
+        // acquire write lock
+        lock.writeLock().lock();
+
+        try {
+            // stored data used for rebuilding missing info
+            rebuild.putBatch(archivedData);
+        } finally {
+            // releasing write lock
+            lock.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public void swap() {
+        // acquire write lock
+        lock.writeLock().lock();
+
+        try {
+            Optional<byte[]> current = rebuild.get(mainDatabaseKey);
+
+            if (!current.isPresent() || current.get()[0] == 2) {
+                rebuild.put(mainDatabaseKey, new byte[]{1});
+
+                // set new main database
+                primary = data[0];
+
+                // delete previous database contents
+                primary.deleteBatch(primary.keys());
+
+                support = data[1];
+            } else {
+                rebuild.put(mainDatabaseKey, new byte[]{2});
+
+                // set new main database
+                primary = data[1];
+
+                // delete previous database contents
+                primary.deleteBatch(primary.keys());
+
+                support = data[0];
+            }
+        } finally {
+            // releasing write lock
+            lock.writeLock().unlock();
+        }
+    }
 
 }
