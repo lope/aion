@@ -73,11 +73,15 @@ public abstract class AbstractDB implements IByteArrayKeyValueDatabase {
         this.name = name;
     }
 
-    protected AbstractDB(String name, String path, boolean enableDbCache, boolean enableDbCompression) {
+    protected AbstractDB(String name, String path) {
         this(name);
 
         Objects.requireNonNull(path, "The database path cannot be null.");
         this.path = new File(path, name).getAbsolutePath();
+    }
+
+    protected AbstractDB(String name, String path, boolean enableDbCache, boolean enableDbCompression) {
+        this(name, path);
 
         this.enableDbCache = enableDbCache;
         this.enableDbCompression = enableDbCompression;
