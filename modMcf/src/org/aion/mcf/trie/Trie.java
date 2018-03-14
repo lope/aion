@@ -96,5 +96,5 @@ public interface Trie {
 
     boolean validate();
 
-    Map<byte[],byte[]> getFullStateFromRoot();
+    Map<byte[],byte[]> getFullStateFromRoot(byte[] stateRoot);
 }

@@ -273,7 +273,7 @@ public class TrieImpl implements Trie {
         }
 
         if (isEmptyNode(node)) {
-            Object[] newNode = new Object[]{packNibbles(key), value};
+            Object[] newNode = new Object[] { packNibbles(key), value };
             return this.putToCache(newNode);
         }
 
@@ -291,7 +291,7 @@ public class TrieImpl implements Trie {
 
             // Matching key pair (ie. there's already an object with this key)
             if (Arrays.equals(k, key)) {
-                Object[] newNode = new Object[]{packNibbles(key), value};
+                Object[] newNode = new Object[] { packNibbles(key), value };
                 return this.putToCache(newNode);
             }
 
@@ -324,7 +324,7 @@ public class TrieImpl implements Trie {
                 // End of the chain, return
                 return newHash;
             } else {
-                Object[] newNode = new Object[]{packNibbles(copyOfRange(key, 0, matchingLength)), newHash};
+                Object[] newNode = new Object[] { packNibbles(copyOfRange(key, 0, matchingLength)), newHash };
                 return this.putToCache(newNode);
             }
         } else {
@@ -375,9 +375,9 @@ public class TrieImpl implements Trie {
                 Object newNode;
                 if (child.length() == PAIR_SIZE) {
                     byte[] newKey = concatenate(k, unpackToNibbles(child.get(0).asBytes()));
-                    newNode = new Object[]{packNibbles(newKey), child.get(1).asObj()};
+                    newNode = new Object[] { packNibbles(newKey), child.get(1).asObj() };
                 } else {
-                    newNode = new Object[]{currentNode.get(0), hash};
+                    newNode = new Object[] { currentNode.get(0), hash };
                 }
                 markRemoved(HashUtil.h256(currentNode.encode()));
                 return this.putToCache(newNode);
@@ -404,14 +404,14 @@ public class TrieImpl implements Trie {
 
             Object[] newNode = null;
             if (amount == 16) {
-                newNode = new Object[]{packNibbles(new byte[]{16}), itemList[amount]};
+                newNode = new Object[] { packNibbles(new byte[] { 16 }), itemList[amount] };
             } else if (amount >= 0) {
                 Value child = this.getNode(itemList[amount]);
                 if (child.length() == PAIR_SIZE) {
-                    key = concatenate(new byte[]{amount}, unpackToNibbles(child.get(0).asBytes()));
-                    newNode = new Object[]{packNibbles(key), child.get(1).asObj()};
+                    key = concatenate(new byte[] { amount }, unpackToNibbles(child.get(0).asBytes()));
+                    newNode = new Object[] { packNibbles(key), child.get(1).asObj() };
                 } else if (child.length() == LIST_SIZE) {
-                    newNode = new Object[]{packNibbles(new byte[]{amount}), itemList[amount]};
+                    newNode = new Object[] { packNibbles(new byte[] { amount }), itemList[amount] };
                 }
             } else {
                 newNode = itemList;
@@ -741,9 +741,34 @@ public class TrieImpl implements Trie {
     }
 
     @Override
-    public Map<byte[], byte[]> getFullStateFromRoot() {
-        // TODO-AR: implement
-        return null;
+    public Map<byte[], byte[]> getFullStateFromRoot(byte[] stateRoot) {
+
+
+        synchronized (cache) {
+            Map<byte[], byte[]> output = new HashMap<>();
+
+            ExtractAllNodes traceAction = new ExtractAllNodes();
+            Value value = new Value(stateRoot);
+
+            if (value.isHashCode()) {
+                scanTree(stateRoot, traceAction);
+            } else {
+                traceAction.doOnNode(stateRoot, value);
+            }
+
+            final String root;
+            if (this.getRoot() instanceof Value) {
+                root = "root: " + Hex.toHexString(getRootHash()) + " => " + this.getRoot() + "\n";
+            } else {
+                root = "root: " + Hex.toHexString(getRootHash()) + "\n";
+            }
+
+            System.out.println(root);
+
+            output.putAll(traceAction.getOutput());
+
+            return output;
+        }
     }
 
 }

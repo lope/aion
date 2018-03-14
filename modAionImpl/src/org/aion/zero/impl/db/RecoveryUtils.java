@@ -29,6 +29,7 @@ import org.aion.log.AionLoggerFactory;
 import org.aion.mcf.db.IBlockStoreBase;
 import org.aion.zero.impl.AionBlockchainImpl;
 import org.aion.zero.impl.config.CfgAion;
+import org.aion.zero.impl.types.AionBlock;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -142,5 +143,33 @@ public class RecoveryUtils {
 
         // ok if we managed to get down to the expected block
         return (nbBestBlock == nbBlock) ? Status.SUCCESS : Status.FAILURE;
+    }
+
+    public static void archiveState() {
+        // ensure mining is disabled
+        CfgAion cfg = CfgAion.inst();
+        cfg.dbFromXML();
+        cfg.getConsensus().setMining(false);
+
+        Map<String, String> cfgLog = new HashMap<>();
+        cfgLog.put("DB", "ERROR");
+
+        AionLoggerFactory.init(cfgLog);
+
+        // get the current blockchain
+        AionBlockchainImpl blockchain = AionBlockchainImpl.inst();
+
+        IBlockStoreBase store = blockchain.getBlockStore();
+
+        IBlock block = store.getBestBlock();
+
+        byte[] stateRoot = ((AionBlock) block).getStateRoot();
+
+        ((AionRepositoryImpl) blockchain.getRepository()).archive(stateRoot);
+
+        ((AionRepositoryImpl) blockchain.getRepository()).setRoot(stateRoot);
+
+        System.out.println(((AionRepositoryImpl) blockchain.getRepository()).getTrieDump());
+        blockchain.getRepository().close();
     }
 }

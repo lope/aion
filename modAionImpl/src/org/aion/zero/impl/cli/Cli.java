@@ -95,6 +95,9 @@ public final class Cli {
                     cfg.toXML(null);
                     System.out.println("\nNew config generated");
                     break;
+                case "-archive":
+                    RecoveryUtils.archiveState();
+                    break;
                 case "-i":
                     cfg.fromXML();
                     System.out.println("\nInformation");
@@ -145,6 +148,7 @@ public final class Cli {
             System.out.println("");
         } catch (Throwable e) {
             System.out.println("");
+            e.printStackTrace();
             return 1;
         }
 

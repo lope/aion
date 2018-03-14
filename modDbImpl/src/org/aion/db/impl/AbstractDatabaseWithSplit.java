@@ -333,6 +333,7 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
         try {
             // stored data used for rebuilding missing info
             rebuild.putBatch(archivedData);
+            if (!rebuild.isAutoCommitEnabled()) {rebuild.commit();}
         } finally {
             // releasing write lock
             lock.writeLock().unlock();
@@ -350,6 +351,8 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
             if (!current.isPresent() || current.get()[0] == 2) {
                 rebuild.put(mainDatabaseKey, new byte[]{1});
 
+                LOG.info("Switching database to <data1>.");
+
                 // set new main database
                 primary = data[0];
 
@@ -359,6 +362,8 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
                 support = data[1];
             } else {
                 rebuild.put(mainDatabaseKey, new byte[]{2});
+
+                LOG.info("Switching database to <data2>.");
 
                 // set new main database
                 primary = data[1];

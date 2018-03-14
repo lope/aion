@@ -223,6 +223,7 @@ public class AionRepositoryImpl extends AbstractRepository<AionBlock, A0BlockHea
         }
     }
 
+
     @Override
     public void flush() {
         LOG.debug("------ FLUSH ON " + this.toString());
@@ -262,9 +263,9 @@ public class AionRepositoryImpl extends AbstractRepository<AionBlock, A0BlockHea
         }
     }
 
-    public void archive() {
+    public void archive(byte[] stateRoot) {
         if (stateDatabase.isRepository()){
-            ((IByteArrayKeyValueRepository)stateDatabase).archive(worldState.getFullStateFromRoot());
+            ((IByteArrayKeyValueRepository)stateDatabase).archive(worldState.getFullStateFromRoot(stateRoot));
         }
     }
 
