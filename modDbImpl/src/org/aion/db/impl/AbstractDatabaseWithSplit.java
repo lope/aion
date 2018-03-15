@@ -59,7 +59,7 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
     private void setupDatabaseHierarchy() {
 
         if (rebuild.isEmpty()) {
-            rebuild.put(mainDatabaseKey, new byte[]{1});
+            rebuild.put(mainDatabaseKey, new byte[] { 1 });
         }
 
         Optional<byte[]> current = rebuild.get(mainDatabaseKey);
@@ -111,7 +111,7 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
             LOG.debug("init split database {}", this.toString());
 
             // correctly open only when all 3 components are open
-            open =  data[0].open() && data[1].open() && rebuild.open();
+            open = data[0].open() && data[1].open() && rebuild.open();
 
             if (open) {
                 setupDatabaseHierarchy();
@@ -203,7 +203,17 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
 
     @Override
     public boolean isEmpty() {
-        return rebuild.isEmpty() && data[0].isEmpty() && data[1].isEmpty();
+        boolean empty = data[0].isEmpty() && data[1].isEmpty();
+
+        if (empty) {
+            if (!rebuild.isEmpty()) {
+                Set<byte[]> keys = rebuild.keys();
+                // checking for keys other than the database indicator
+                empty = (keys.size() == 1) && (keys.contains(mainDatabaseKey));
+            }
+        }
+
+        return empty;
     }
 
     @Override
@@ -229,37 +239,23 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
     }
 
     @Override
-    public Optional<byte[]> get(byte[] k) {
-        AbstractDB.check(k);
-
-        // acquire read lock
-        lock.readLock().lock();
-
+    public byte[] getInternal(byte[] k) {
         Optional<byte[]> v;
 
-        try {
-            // this runtime exception should not be caught here
-            check();
+        // first check main database
+        v = primary.get(k);
 
-            // first check main database
-            v = primary.get(k);
-
-            // next check support database
-            if (!v.isPresent()) {
-                v = support.get(k);
-            }
-
-            // finally check rebuild database
-            if (!v.isPresent()) {
-                v = rebuild.get(k);
-            }
-
-        } finally {
-            // releasing read lock
-            lock.readLock().unlock();
+        // next check support database
+        if (!v.isPresent()) {
+            v = support.get(k);
         }
 
-        return v;
+        // finally check rebuild database
+        if (!v.isPresent()) {
+            v = rebuild.get(k);
+        }
+
+        return v.isPresent() ? v.get() : null;
     }
 
     @Override
@@ -349,7 +345,7 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
             Optional<byte[]> current = rebuild.get(mainDatabaseKey);
 
             if (!current.isPresent() || current.get()[0] == 2) {
-                rebuild.put(mainDatabaseKey, new byte[]{1});
+                rebuild.put(mainDatabaseKey, new byte[] { 1 });
 
                 LOG.info("Switching database to <data1>.");
 
@@ -361,7 +357,7 @@ public class AbstractDatabaseWithSplit extends AbstractDB implements IByteArrayK
 
                 support = data[1];
             } else {
-                rebuild.put(mainDatabaseKey, new byte[]{2});
+                rebuild.put(mainDatabaseKey, new byte[] { 2 });
 
                 LOG.info("Switching database to <data2>.");
 

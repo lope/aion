@@ -133,18 +133,30 @@ public class DriverBaseTest {
                                 boolean.class, boolean.class, String.class, boolean.class),
                         new Object[] { dbNamePrefix + DatabaseTestUtils.getNext(), dbPath, false, false, false,
                                 unboundHeapCache, false } },
-                // LevelDBWithCache w. autocommit
+                // LevelDBWithCache w. autocommit wo.split
                 { "LevelDBWithCache+autocommit",
                         LevelDBWithCache.class.getDeclaredConstructor(String.class, String.class, boolean.class,
-                                boolean.class, boolean.class, String.class, boolean.class),
+                                boolean.class, boolean.class, String.class, boolean.class, boolean.class),
                         new Object[] { dbNamePrefix + DatabaseTestUtils.getNext(), dbPath, false, false, true,
-                                unboundHeapCache, false } },
-                // LevelDBWithCache wo. autocommit
+                                unboundHeapCache, false, false } },
+//                // LevelDBWithCache w. autocommit w. split
+//                { "LevelDBWithCache+autocommit+split",
+//                        LevelDBWithCache.class.getDeclaredConstructor(String.class, String.class, boolean.class,
+//                                boolean.class, boolean.class, String.class, boolean.class, boolean.class),
+//                        new Object[] { dbNamePrefix + DatabaseTestUtils.getNext(), dbPath, false, false, true,
+//                                unboundHeapCache, false, true } },
+                // LevelDBWithCache wo. autocommit wo. split
                 { "LevelDBWithCache",
                         LevelDBWithCache.class.getDeclaredConstructor(String.class, String.class, boolean.class,
-                                boolean.class, boolean.class, String.class, boolean.class),
+                                boolean.class, boolean.class, String.class, boolean.class, boolean.class),
                         new Object[] { dbNamePrefix + DatabaseTestUtils.getNext(), dbPath, false, false, false,
-                                unboundHeapCache, false } },
+                                unboundHeapCache, false, false } },
+//                // LevelDBWithCache wo. autocommit w. split
+//                { "LevelDBWithCache+split",
+//                        LevelDBWithCache.class.getDeclaredConstructor(String.class, String.class, boolean.class,
+//                                boolean.class, boolean.class, String.class, boolean.class, boolean.class),
+//                        new Object[] { dbNamePrefix + DatabaseTestUtils.getNext(), dbPath, false, false, false,
+//                                unboundHeapCache, false, true } },
                 // MockDBWithCache w. autocommit
                 { "MockDBWithCache+autocommit",
                         MockDBWithCache.class.getDeclaredConstructor(String.class, boolean.class, String.class,
