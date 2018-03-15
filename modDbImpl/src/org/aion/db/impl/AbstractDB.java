@@ -101,6 +101,11 @@ public abstract class AbstractDB implements IByteArrayKeyValueDatabase {
         throw new UnsupportedOperationException("Only automatic commits are supported by " + this.toString());
     }
 
+    @Override
+    public void compact() {
+        LOG.warn("Compact not supported by " + this.toString() + ".");
+    }
+
     /**
      * @inheritDoc
      */
@@ -206,4 +211,39 @@ public abstract class AbstractDB implements IByteArrayKeyValueDatabase {
     public boolean isRepository() {
         return false;
     }
+
+    // IKeyValueStore functionality ------------------------------------------------------------------------------------
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public Optional<byte[]> get(byte[] k) {
+        check(k);
+
+        // acquire read lock
+        lock.readLock().lock();
+
+        byte[] v;
+
+        try {
+            check();
+
+            v = getInternal(k);
+        } finally {
+            // releasing read lock
+            lock.readLock().unlock();
+        }
+
+        return Optional.ofNullable(v);
+    }
+
+    /**
+     * Database specific get functionality, without locking required. Locking is applied in {@link #get(byte[])}.
+     *
+     * @param k
+     *         the key for which the method must return the associated value
+     * @return the value stored in the database for the give key.
+     */
+    protected abstract byte[] getInternal(byte[] k);
 }
