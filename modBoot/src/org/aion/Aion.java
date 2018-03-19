@@ -41,6 +41,7 @@ import org.aion.log.AionLoggerFactory;
 import org.aion.evtmgr.EventMgrModule;
 import org.aion.log.LogEnum;
 import org.aion.mcf.mine.IMineRunner;
+import org.aion.zero.impl.AionHub;
 import org.aion.zero.impl.blockchain.AionFactory;
 import org.aion.zero.impl.blockchain.IAionChain;
 import org.aion.zero.impl.cli.Cli;
@@ -118,8 +119,8 @@ public class Aion {
             zmqThread.start();
         }
 
-        
-        HttpServer.start(ac.getAionHub().getP2pMgr());
+        if(cfg.getApi().getRpc().getActive())
+            new HttpServer(AionHub.inst().getP2pMgr(), cfg.getApi().getRpc().getIp(), cfg.getApi().getRpc().getPort());
 
         /*
          * This is a hack, but used to let us pass zmqThread into thread
