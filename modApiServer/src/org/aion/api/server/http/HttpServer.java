@@ -1,26 +1,28 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2017-2018 Aion foundation.
  *
- *     This file is part of the aion network project.
+ * This file is part of the aion network project.
  *
- *     The aion network project is free software: you can redistribute it
- *     and/or modify it under the terms of the GNU General Public License
- *     as published by the Free Software Foundation, either version 3 of
- *     the License, or any later version.
+ * The aion network project is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of
+ * the License, or any later version.
  *
- *     The aion network project is distributed in the hope that it will
- *     be useful, but WITHOUT ANY WARRANTY; without even the implied
- *     warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *     See the GNU General Public License for more details.
+ * The aion network project is distributed in the hope that it will
+ * be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with the aion network project source files.
- *     If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with the aion network project source files.
+ * If not, see <https://www.gnu.org/licenses/>.
  *
- * Contributors:
- *     Aion foundation.
- *     
- ******************************************************************************/
+ * Contributors to the aion source files in decreasing order of code volume:
+ *
+ * Aion foundation.
+ *
+ */
+
 package org.aion.api.server.http;
 
 import org.aion.api.server.IRpc;
@@ -29,63 +31,57 @@ import org.aion.api.server.types.*;
 import org.aion.base.type.Address;
 import org.aion.base.util.ByteUtil;
 import org.aion.base.util.TypeConverter;
-import org.aion.mcf.config.CfgApi;
 import org.aion.crypto.HashUtil;
 import org.aion.log.AionLoggerFactory;
 import org.aion.log.LogEnum;
 import org.aion.p2p.IP2pMgr;
 import org.aion.zero.impl.blockchain.AionImpl;
-import org.aion.zero.impl.config.CfgAion;
 import org.aion.zero.impl.types.AionBlock;
 import org.aion.zero.types.A0BlockHeader;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
-
 import org.aion.equihash.Solution;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import java.text.Format;
-import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import static org.aion.base.util.ByteUtil.toHexString;
 import static org.aion.base.util.ByteUtil.hexStringToBytes;
 
 /**
- * @author chris rpc server TODO: refactor as pooled response writing
+ * @author chris
  */
 public final class HttpServer {
 
-    /**
-     * Basics
-     */
-    private static final Logger log = AionLoggerFactory.getLogger(LogEnum.API.name());
-    private static AtomicBoolean start = new AtomicBoolean(false);
-    private static CfgApi cfg = CfgAion.inst().getApi();
-
-    private static final String CHARSET = "UTF-8";
-    private static final String CF = "\r\n";
-    private static final String RES_OPTIONS_TEMPLATE = "HTTP/1.1 200 OK\n" + "Server: Aion\n"
+    private final Logger log = AionLoggerFactory.getLogger(LogEnum.API.name());
+    private final String ip;
+    private final int port;
+    private final boolean allowCors;
+    private final static String CHARSET = "UTF-8";
+    private final static String CF = "\r\n";
+    private final static String RES_OPTIONS_TEMPLATE = "HTTP/1.1 200 OK\n" + "Server: Aion\n"
             + "Access-Control-Allow-Headers: Content-Type\n" + "Access-Control-Allow-Origin: [ALLOW_ORIGIN]\n"
             + "Access-Control-Allow-Methods: POST, OPTIONS\n" + "Content-Length: 0\n" + "Content-Type: text/plain";
 
-    private static final boolean allowCors = true;
 
     /**
      * References
      */
     private static ApiWeb3Aion api = new ApiWeb3Aion(AionImpl.inst());
-    private static IP2pMgr p2pMgr;
-    private static Selector selector;
+    private IP2pMgr p2pMgr;
+    private Selector selector;
+    private ServerSocketChannel tcpServer;
+    private Thread tInbound;
+    private ExecutorService workers;
+    private AtomicBoolean start;
 
     /**
      * Mining params
@@ -94,10 +90,11 @@ public final class HttpServer {
     // private static AtomicReference<AionBlock> currentMining;
     // TODO: Verify if need to use a concurrent map; locking may allow for use
     // of a simple map
-    private static HashMap<String, AionBlock> templateMap;
-    private static ReadWriteLock templateMapLock;
+    private HashMap<String, AionBlock> templateMap;
 
-    private static JSONObject processResult(final long _id, final Object _result) {
+    private ReadWriteLock templateMapLock;
+
+    private JSONObject processResult(long _id, final Object _result) {
         JSONObject json = new JSONObject();
         json.put("jsonrpc", "2.0");
         json.put("id", _id);
@@ -105,8 +102,7 @@ public final class HttpServer {
         return json;
     }
 
-    private static JSONObject process(final IRpc.Method _method, final long _id, final Object _params)
-            throws Exception {
+    private JSONObject process(final IRpc.Method _method, long _id, final Object _params) throws Exception {
         if (log.isDebugEnabled())
             log.debug("<request mth=[{}] id={} params={}>", _method.name(), _id, _params.toString());
         JSONObject jsonObj;
@@ -569,17 +565,18 @@ public final class HttpServer {
         }
     }
 
-    private static void handleOptions(final SocketChannel _sc, final String _msg) throws IOException {
+    private void handleOptions(final SocketChannel _sc, final String _msg) throws Exception {
 
         String[] frags = _msg.split("\n");
         String reqOrigin = "";
         for (String frag : frags) {
-            if (frag.startsWith("Origin: "))
+            if (frag.startsWith("Origin: ")) {
                 reqOrigin = frag.replace("Origin: ", "");
+                break;
+            }
         }
 
-        ByteBuffer buf = ByteBuffer
-                .wrap(RES_OPTIONS_TEMPLATE.replace("[ALLOW_ORIGIN]", allowCors ? "*" : reqOrigin).getBytes(CHARSET));
+        ByteBuffer buf = ByteBuffer.wrap(RES_OPTIONS_TEMPLATE.replace("[ALLOW_ORIGIN]", allowCors ? "*" : reqOrigin).getBytes(CHARSET));
 
         try {
             while (buf.hasRemaining()) {
@@ -592,223 +589,237 @@ public final class HttpServer {
         }
     }
 
-    public static void start(final IP2pMgr _p2pMgr) {
-        p2pMgr = _p2pMgr;
+    private void handleBatch(final SocketChannel _sc, String _requestBody) throws Exception{
 
-        templateMap = new HashMap<>();
-        templateMapLock = new ReentrantReadWriteLock();
+        JSONArray requestBodies = new JSONArray(_requestBody);
+        JSONArray responseBodies = new JSONArray();
+        List<String> methodStrs = new ArrayList<>();
 
-        if (!start.get()) {
-            start.set(true);
-            if (cfg.getRpc().getActive()) {
+        for (int i = 0, m = requestBodies.length(); i < m; i++) {
+            JSONObject bodyObj = requestBodies.getJSONObject(i);
+            Object methodObj = bodyObj.get("method");
+            Object idObj = bodyObj.get("id");
+            Object paramsObj = bodyObj.getJSONArray("params");
+
+            Method method = null;
+            try {
+                if (methodObj != null) {
+                    String methodStr = (String) methodObj;
+                    method = Method.valueOf(methodStr);
+                    methodStrs.add(methodStr);
+                } else
+                    _sc.close();
+            } catch (IllegalArgumentException ex) {
+                _sc.close();
+            }
+            if (idObj != null && method != null)
+                responseBodies.put(process(method, Long.parseLong(idObj.toString()), paramsObj));
+        }
+        String responseBody = responseBodies.toString();
+
+        if (log.isDebugEnabled())
+            log.debug("<response mths=[{}] result={}>",
+                    String.join(",", methodStrs),
+                    responseBody);
+        String responseHeader = "HTTP/1.1 200 OK\n"
+                + "Content-Length: "
+                + responseBody.getBytes().length + "\n"
+                + "Content-Type: application/json\n"
+                + "Access-Control-Allow-Origin: *\n";
+        ByteBuffer resultBuffer = ByteBuffer.wrap((responseHeader + "\n" + responseBody).getBytes(CHARSET));
+
+        while (resultBuffer.hasRemaining()) {
+            _sc.write(resultBuffer);
+        }
+        _sc.keyFor(selector).cancel();
+        _sc.close();
+    }
+
+    private void handleSingle(final SocketChannel _sc, String _requestBody) throws Exception{
+        JSONObject bodyObj = new JSONObject(_requestBody);
+        Object methodObj = bodyObj.get("method");
+        Object idObj = bodyObj.get("id");
+        Object paramsObj = bodyObj.getJSONArray("params");
+        Method method = null;
+        try {
+            if (methodObj != null) {
+                String methodStr = (String) methodObj;
+                method = Method.valueOf(methodStr);
+            } else
+                _sc.close();
+        } catch (IllegalArgumentException ex) {
+            _sc.close();
+        }
+
+        if (idObj != null && method != null) {
+            JSONObject resJson = process(method,
+                    Long.parseLong(idObj.toString()),
+                    paramsObj);
+            String responseBody = resJson == null ? "" : resJson.toString();
+            String responseHeader =
+                    "HTTP/1.1 200 OK\n"
+                            + "Content-Length: "
+                            + responseBody.getBytes().length + "\n"
+                            + "Content-Type: application/json\n"
+                            + "Access-Control-Allow-Origin: *\n\n";
+
+            if (log.isDebugEnabled())
+                log.debug("<response mths=[{}] result={}>",
+                        method.toString(), responseBody);
+
+            String response = responseHeader + responseBody;
+            ByteBuffer resultBuffer = ByteBuffer
+                    .wrap((response).getBytes(CHARSET));
+            while (resultBuffer.hasRemaining()) {
                 try {
-                    selector = Selector.open();
-                    if (cfg.getRpc().getActive()) {
-                        String ip = cfg.getRpc().getIp();
-                        int port = cfg.getRpc().getPort();
-
-                        InetSocketAddress address = new InetSocketAddress(ip, port);
-                        ServerSocketChannel tcpServer = ServerSocketChannel.open();
-                        tcpServer.configureBlocking(false);
-                        tcpServer.socket().setReuseAddress(true);
-                        tcpServer.socket().bind(address);
-                        tcpServer.register(selector, SelectionKey.OP_ACCEPT);
-
-                        if (log.isDebugEnabled())
-                            log.debug("<rpc action=start bind={}:{}>", ip, port);
-
-                        Thread processInbound = new Thread(() -> {
-                            // while (start.get()) {
-                            while (!Thread.currentThread().isInterrupted()) {
-                                try {
-                                    if (selector.selectNow() > 0) {
-                                        Set<SelectionKey> sks = selector.selectedKeys();
-                                        Iterator<SelectionKey> it = sks.iterator();
-                                        while (it.hasNext()) {
-                                            SelectionKey sk = it.next();
-                                            it.remove();
-                                            try {
-                                                if (sk.isAcceptable()) {
-                                                    SocketChannel tcpChannel = tcpServer.accept();
-                                                    tcpChannel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-                                                    tcpChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);
-                                                    tcpChannel.configureBlocking(false);
-                                                    tcpChannel.register(selector, SelectionKey.OP_READ);
-                                                }
-                                                if (sk.isReadable()) {
-                                                    SocketChannel sc = (SocketChannel) sk.channel();
-
-                                                    /*
-                                                     * TODO: complete
-                                                     * Content-Length read
-                                                     */
-                                                    ByteBuffer readBuffer = ByteBuffer.allocate(1024 * 1024);
-                                                    while (sc.read(readBuffer) > 0) {
-                                                        sc.read(readBuffer);
-                                                    }
-                                                    try {
-                                                        byte[] readBytes = readBuffer.array();
-                                                        if (readBytes.length > 0) {
-
-                                                            String msg = new String(readBytes, "UTF-8").trim();
-
-                                                            if (msg.startsWith("OPTIONS"))
-                                                                handleOptions(sc, msg);
-
-                                                            String[] msgFrags = msg.split(CF);
-                                                            int docBreaker = 0;
-                                                            int len = msgFrags.length;
-
-                                                            for (int i = 0; i < len; i++) {
-                                                                if (msgFrags[i].isEmpty())
-                                                                    docBreaker = i;
-                                                            }
-                                                            if (docBreaker + 2 == len) {
-                                                                String requestBody = msgFrags[docBreaker + 1];
-                                                                /*
-                                                                 * TODO: clear
-                                                                 * this part
-                                                                 * index 1
-                                                                 */
-                                                                char firstChar = requestBody.charAt(0);
-
-                                                                if (firstChar == '{') {
-                                                                    /*
-                                                                     * single
-                                                                     * call
-                                                                     */
-                                                                    JSONObject bodyObj = new JSONObject(requestBody);
-                                                                    Object methodObj = bodyObj.get("method");
-                                                                    Object idObj = bodyObj.get("id");
-                                                                    Object paramsObj = bodyObj.getJSONArray("params");
-
-                                                                    Method method = null;
-                                                                    try {
-                                                                        if (methodObj != null) {
-                                                                            String methodStr = (String) methodObj;
-                                                                            method = Method.valueOf(methodStr);
-                                                                        } else
-                                                                            sc.close();
-                                                                    } catch (IllegalArgumentException ex) {
-                                                                        sc.close();
-                                                                    }
-
-                                                                    if (idObj != null && method != null) {
-                                                                        JSONObject resJson = process(method,
-                                                                                Long.parseLong(idObj.toString()),
-                                                                                paramsObj);
-                                                                        String responseBody = resJson == null ? ""
-                                                                                : resJson.toString();
-                                                                        String responseHeader = "HTTP/1.1 200 OK\n"
-                                                                                + "Content-Length: "
-                                                                                + responseBody.getBytes().length + "\n"
-                                                                                + "Content-Type: application/json\n"
-                                                                                + "Access-Control-Allow-Origin: *\n\n";
-
-                                                                        if (log.isDebugEnabled())
-                                                                            log.debug("<response mths=[{}] result={}>",
-                                                                                    method.toString(), responseBody);
-
-                                                                        String response = responseHeader + responseBody;
-                                                                        ByteBuffer resultBuffer = ByteBuffer
-                                                                                .wrap((response).getBytes(CHARSET));
-                                                                        while (resultBuffer.hasRemaining()) {
-                                                                            try {
-                                                                                sc.write(resultBuffer);
-                                                                            } catch (IOException e) {
-                                                                                break;
-                                                                            }
-                                                                        }
-                                                                        sc.close();
-                                                                    } else
-                                                                        sc.close();
-                                                                } else if (firstChar == '[') {
-                                                                    /*
-                                                                     * batch
-                                                                     * calls
-                                                                     */
-                                                                    JSONArray requestBodies = new JSONArray(
-                                                                            requestBody);
-                                                                    JSONArray responseBodies = new JSONArray();
-                                                                    List<String> methodStrs = new ArrayList<>();
-                                                                    for (int i = 0, m = requestBodies
-                                                                            .length(); i < m; i++) {
-                                                                        JSONObject bodyObj = requestBodies
-                                                                                .getJSONObject(i);
-                                                                        Object methodObj = bodyObj.get("method");
-                                                                        Object idObj = bodyObj.get("id");
-                                                                        Object paramsObj = bodyObj
-                                                                                .getJSONArray("params");
-
-                                                                        Method method = null;
-                                                                        try {
-                                                                            if (methodObj != null) {
-                                                                                String methodStr = (String) methodObj;
-                                                                                method = Method.valueOf(methodStr);
-                                                                                methodStrs.add(methodStr);
-                                                                            } else
-                                                                                sc.close();
-                                                                        } catch (IllegalArgumentException ex) {
-                                                                            sc.close();
-                                                                        }
-                                                                        if (idObj != null && method != null)
-                                                                            responseBodies.put(process(method,
-                                                                                    Long.parseLong(idObj.toString()),
-                                                                                    paramsObj));
-                                                                    }
-                                                                    String responseBody = responseBodies.toString();
-
-                                                                    if (log.isDebugEnabled())
-                                                                        log.debug("<response mths=[{}] result={}>",
-                                                                                String.join(",", methodStrs),
-                                                                                responseBody);
-                                                                    String responseHeader = "HTTP/1.1 200 OK\n"
-                                                                            + "Content-Length: "
-                                                                            + responseBody.getBytes().length + "\n"
-                                                                            + "Content-Type: application/json\n"
-                                                                            + "Access-Control-Allow-Origin: *\n";
-                                                                    ByteBuffer resultBuffer = ByteBuffer
-                                                                            .wrap((responseHeader + "\n" + responseBody)
-                                                                                    .getBytes(CHARSET));
-                                                                    while (resultBuffer.hasRemaining()) {
-                                                                        try {
-                                                                            sc.write(resultBuffer);
-                                                                        } catch (IOException e) {
-                                                                            sc.close();
-                                                                            break;
-                                                                        }
-                                                                    }
-                                                                } else
-                                                                    sc.close();
-                                                            }
-                                                        } else
-                                                            sc.close();
-                                                    } catch (Exception ex) {
-                                                        sc.close();
-                                                    }
-                                                }
-                                            } catch (CancelledKeyException | IOException ex) {
-                                                ex.printStackTrace();
-                                                sk.channel().close();
-                                                sk.cancel();
-                                            }
-                                        }
-                                    }
-                                    Thread.sleep(1);
-                                } catch (IOException | InterruptedException e1) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("<rpc-io-exception>");
-                                }
-                            }
-                        });
-                        processInbound.setName("rpc-server");
-                        processInbound.start();
-                    }
-
-                } catch (IOException ex) {
-                    log.error("<api io-exception>");
+                    _sc.write(resultBuffer);
+                } catch (IOException e) {
+                    break;
                 }
             }
         }
+    }
+
+    private void read(final SocketChannel _sc) throws Exception{
+
+        /*
+         * TODO: complete
+         * Content-Length read
+         */
+        ByteBuffer readBuffer = ByteBuffer.allocate(1024 * 1024);
+        while (_sc.read(readBuffer) > 0) {}
+
+        byte[] readBytes = readBuffer.array();
+        if (readBytes.length > 0) {
+
+            String msg = new String(readBytes, "UTF-8").trim();
+
+            if (msg.startsWith("OPTIONS"))
+                handleOptions(_sc, msg);
+
+            String[] msgFrags = msg.split(CF);
+            int docBreaker = 0;
+            int len = msgFrags.length;
+
+            for (int i = 0; i < len; i++) {
+                if (msgFrags[i].isEmpty())
+                    docBreaker = i;
+            }
+            if (docBreaker + 2 == len) {
+                String requestBody = msgFrags[docBreaker + 1];
+                char firstChar = requestBody.charAt(0);
+                if (firstChar == '{')
+                    handleSingle(_sc, requestBody);
+                else if (firstChar == '[')
+                    handleBatch(_sc, requestBody);
+            }
+        }
+        _sc.close();
+    }
+
+    private void accept(){
+        try{
+            SocketChannel tcpChannel = tcpServer.accept();
+            tcpChannel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+            tcpChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);
+            tcpChannel.configureBlocking(false);
+            tcpChannel.register(selector, SelectionKey.OP_READ);
+        } catch (IOException e) {}
+    }
+
+    private class TaskInbound implements Runnable{
+
+        @Override
+        public void run() {
+            while (start.get()) {
+                int num;
+                try{
+                    num = selector.select();
+                } catch (IOException e){
+                    continue;
+                }
+
+                if(num == 0)
+                    continue;
+
+                Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
+
+                while (keys.hasNext()) {
+                    SelectionKey sk = keys.next();
+                    keys.remove();
+
+                    if(!sk.isValid())
+                        continue;
+
+                    if (sk.isAcceptable())
+                        accept();
+
+                    if (sk.isReadable()) {
+
+                        try {
+                            read((SocketChannel) sk.channel());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public HttpServer(final IP2pMgr _p2pMgr, String _ip, int _port){
+        this.p2pMgr = _p2pMgr;
+        this.ip = _ip;
+        this.port = _port;
+
+        this.workers = new ThreadPoolExecutor(
+            Runtime.getRuntime().availableProcessors(),
+            4,
+            60,
+            TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(10),
+            new RpcThreadFactory()
+        );
+        this.start = new AtomicBoolean(true);
+        this.allowCors = true;
+        this.templateMap = new HashMap<>();
+        this.templateMapLock = new ReentrantReadWriteLock();
+    }
+
+    public void start() {
+
+        InetSocketAddress address = new InetSocketAddress(this.ip, this.port);
+
+        try{
+            this.tcpServer = ServerSocketChannel.open();
+            this.tcpServer.configureBlocking(false);
+            this.tcpServer.socket().setReuseAddress(true);
+            this.tcpServer.socket().bind(address);
+        } catch (IOException e) {
+            log.error("<rpc-server-bind-failed bind={}:{}>", ip, port);
+            System.exit(1);
+        }
+
+        try {
+            selector = Selector.open();
+            tcpServer.register(selector, SelectionKey.OP_ACCEPT);
+
+            if (log.isDebugEnabled())
+                log.debug("<rpc-server-start bind={}:{}>", ip, port);
+
+            tInbound = new Thread(new TaskInbound(), "rpc-server");
+            tInbound.start();
+
+
+        } catch (IOException ex) {
+            log.error("<rpc-server io-exception>");
+        }
+
+    }
+
+    public void shutdown(){
+        start.set(false);
+        if(tInbound != null)
+            tInbound.interrupt();
     }
 }
