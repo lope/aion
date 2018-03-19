@@ -101,9 +101,9 @@ public class ProtocolProcessor implements Runnable {
             ExecutorService es = Executors.newFixedThreadPool(numProcs);
             for (int i = 0; i < numProcs; i++) {
                 if (i == 0) {
-                    es.execute(() -> callbackRun(ctx));
+                    //es.execute(() -> callbackRun(ctx));
                 } else if (i == 1) {
-                    es.execute(() -> txWaitRun());
+                   // es.execute(() -> txWaitRun());
                 } else if (i == 2) {
                     es.execute(() -> eventRun(ctx));
                 } else {
@@ -192,59 +192,59 @@ public class ProtocolProcessor implements Runnable {
         }
     }
 
-    private void txWaitRun() {
-        while (!shutDown.get()) {
-            ((HdlrZmq) this.handler).getTxWait();
-        }
-    }
+//    private void txWaitRun() {
+//        while (!shutDown.get()) {
+//            //((HdlrZmq) this.handler).getTxWait();
+//        }
+//    }
 
     private void callbackRun(Context ctx) {
-        Socket sock = ctx.socket(ZMQ.DEALER);
-        sock.connect(AION_ZMQ_CB_TH);
-
-        while (!shutDown.get()) {
-            TxPendingStatus tps = null;
-            try {
-                tps = ((HdlrZmq) this.handler).getTxStatusQueue().take();
-            } catch (InterruptedException e1) {
-                // TODO Auto-generated catch block
-                if (LOG.isErrorEnabled()) {
-                    LOG.error("queue take exception - [{}]", e1.getMessage());
-                }
-                continue;
-            }
-
-            if (tps == null || tps.isEmpty()) {
-
-                if (tps == null) {
-                    if (LOG.isErrorEnabled()) {
-                        LOG.error("queue take null tps");
-                    }
-                }
-                continue;
-            }
-
-            byte[] rsp = tps.toTxReturnCode() != 105
-                    ? ((HdlrZmq) this.handler).toRspMsg(tps.getMsgHash(), tps.toTxReturnCode())
-                    : ((HdlrZmq) this.handler).toRspMsg(tps.getMsgHash(), tps.toTxReturnCode(), tps.getTxResult());
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("callbackRun send. socketID: [{}], msgHash: [{}], txReturnCode: [{}]/n rspMsg: [{}]",
-                        Hex.toHexString(tps.getSocketId()), Hex.toHexString(tps.getMsgHash()), tps.toTxReturnCode(),
-                        Hex.toHexString(rsp));
-            }
-            try {
-                sock.send(tps.getSocketId(), ZMQ.SNDMORE);
-                sock.send(rsp, ZMQ.PAIR);
-            } catch (Exception e) {
-                if (LOG.isErrorEnabled()) {
-                    LOG.error("ProtocolProcessor.callbackRun sock.send exception: " + e.getMessage());
-                }
-            }
-        }
-        sock.close();
-        if (LOG.isInfoEnabled()) {
-            LOG.info("close callbackRun Sockets...");
-        }
+//        Socket sock = ctx.socket(ZMQ.DEALER);
+//        sock.connect(AION_ZMQ_CB_TH);
+//
+//        while (!shutDown.get()) {
+//            TxPendingStatus tps = null;
+//            try {
+//                tps = ((HdlrZmq) this.handler).getTxStatusQueue().take();
+//            } catch (InterruptedException e1) {
+//                // TODO Auto-generated catch block
+//                if (LOG.isErrorEnabled()) {
+//                    LOG.error("queue take exception - [{}]", e1.getMessage());
+//                }
+//                continue;
+//            }
+//
+//            if (tps == null || tps.isEmpty()) {
+//
+//                if (tps == null) {
+//                    if (LOG.isErrorEnabled()) {
+//                        LOG.error("queue take null tps");
+//                    }
+//                }
+//                continue;
+//            }
+//
+//            byte[] rsp = tps.toTxReturnCode() != 105
+//                    ? ((HdlrZmq) this.handler).toRspMsg(tps.getMsgHash(), tps.toTxReturnCode())
+//                    : ((HdlrZmq) this.handler).toRspMsg(tps.getMsgHash(), tps.toTxReturnCode(), tps.getTxResult());
+//            if (LOG.isTraceEnabled()) {
+//                LOG.trace("callbackRun send. socketID: [{}], msgHash: [{}], txReturnCode: [{}]/n rspMsg: [{}]",
+//                        Hex.toHexString(tps.getSocketId()), Hex.toHexString(tps.getMsgHash()), tps.toTxReturnCode(),
+//                        Hex.toHexString(rsp));
+//            }
+//            try {
+//                sock.send(tps.getSocketId(), ZMQ.SNDMORE);
+//                sock.send(rsp, ZMQ.PAIR);
+//            } catch (Exception e) {
+//                if (LOG.isErrorEnabled()) {
+//                    LOG.error("ProtocolProcessor.callbackRun sock.send exception: " + e.getMessage());
+//                }
+//            }
+//        }
+//        sock.close();
+//        if (LOG.isInfoEnabled()) {
+//            LOG.info("close callbackRun Sockets...");
+//        }
     }
 
     private void workerRun(ZMQ.Context ctx) {

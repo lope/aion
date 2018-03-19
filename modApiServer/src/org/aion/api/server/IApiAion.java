@@ -38,8 +38,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public interface IApiAion {
     int MAP_SIZE = 50000;
-    LinkedBlockingQueue<TxPendingStatus> txPendingStatus = new LinkedBlockingQueue<>();
+    
+    //LinkedBlockingQueue<TxPendingStatus> txPendingStatus = new LinkedBlockingQueue<>();
+    
     LinkedBlockingQueue<TxWaitingMappingUpdate> txWait = new LinkedBlockingQueue<>();
+    
     Map<ByteArrayWrapper, Map.Entry<ByteArrayWrapper, ByteArrayWrapper>> msgIdMapping = Collections
             .synchronizedMap(new LRUMap<>(MAP_SIZE, 100));
 
@@ -53,9 +56,9 @@ public interface IApiAion {
 
     Map<ByteArrayWrapper, AionTxReceipt> getPendingReceipts();
 
-    default LinkedBlockingQueue<TxPendingStatus> getQueue() {
-        return txPendingStatus;
-    }
+//    default LinkedBlockingQueue<TxPendingStatus> getQueue() {
+//        return txPendingStatus;
+//    }
 
     // General Level
     byte getApiVersion();

@@ -104,24 +104,24 @@ public class AionPoW {
             setupHandler();
             registerCallback();
 
-            new Thread(() -> {
-                while (!shutDown.get()) {
-                    try {
-                        Thread.sleep(100);
-
-                        long now = System.currentTimeMillis();
-                        if (now - lastUpdate.get() > 3000 && newPendingTxReceived.compareAndSet(true, false)
-                                || now - lastUpdate.get() > 10000) { // fallback, when
-                                                               // we never
-                                                               // received any
-                                                               // events
-                            createNewBlockTemplate();
-                        }
-                    } catch (InterruptedException e) {
-                        break;
-                    }
-                }
-            }, "pow").start();
+//            new Thread(() -> {
+//                while (!shutDown.get()) {
+//                    try {
+//                        Thread.sleep(100);
+//
+//                        long now = System.currentTimeMillis();
+//                        if (now - lastUpdate.get() > 3000 && newPendingTxReceived.compareAndSet(true, false)
+//                                || now - lastUpdate.get() > 10000) { // fallback, when
+//                                                               // we never
+//                                                               // received any
+//                                                               // events
+//                            createNewBlockTemplate();
+//                        }
+//                    } catch (InterruptedException e) {
+//                        break;
+//                    }
+//                }
+//            }, "pow").start();
         }
     }
 
@@ -136,7 +136,7 @@ public class AionPoW {
         eventMgr.registerEvent(txEvts);
 
         List<IEvent> events = new ArrayList<>();
-        events.add(new EventConsensus(EventConsensus.CALLBACK.ON_BLOCK_TEMPLATE));
+        //events.add(new EventConsensus(EventConsensus.CALLBACK.ON_BLOCK_TEMPLATE));
         events.add(new EventConsensus(EventConsensus.CALLBACK.ON_SOLUTION));
         eventMgr.registerEvent(events);
     }
@@ -230,35 +230,35 @@ public class AionPoW {
      * Creates a new block template.
      */
     protected synchronized void createNewBlockTemplate() {
-        if (!shutDown.get()) {
-
-            if (!config.getConsensus().getMining()) {
-                return;
-            }
-
-            // TODO: Validate the trustworthiness of getNetworkBestBlock - can
-            // it be used in DDOS?
-            if (this.syncMgr.getNetworkBestBlockNumber() - blockchain.getBestBlock().getNumber() > syncLimit) {
-                return;
-            }
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Creating a new block template");
-            }
-
-            AionBlock bestBlock = blockchain.getBlockByNumber(blockchain.getBestBlock().getNumber());
-
-            List<AionTransaction> txs = pendingState.getPendingTransactions();
-
-            AionBlock newBlock = blockchain.createNewBlock(bestBlock, txs, false);
-
-            EventConsensus ev = new EventConsensus(EventConsensus.CALLBACK.ON_BLOCK_TEMPLATE);
-            ev.setFuncArgs(Collections.singletonList(newBlock));
-            eventMgr.newEvent(ev);
-
-            // update last timestamp
-            lastUpdate.set(System.currentTimeMillis());
-        }
+//        if (!shutDown.get()) {
+//
+//            if (!config.getConsensus().getMining()) {
+//                return;
+//            }
+//
+//            // TODO: Validate the trustworthiness of getNetworkBestBlock - can
+//            // it be used in DDOS?
+//            if (this.syncMgr.getNetworkBestBlockNumber() - blockchain.getBestBlock().getNumber() > syncLimit) {
+//                return;
+//            }
+//
+//            if (LOG.isDebugEnabled()) {
+//                LOG.debug("Creating a new block template");
+//            }
+//
+//            AionBlock bestBlock = blockchain.getBlockByNumber(blockchain.getBestBlock().getNumber());
+//
+//            List<AionTransaction> txs = pendingState.getPendingTransactions();
+//
+//            AionBlock newBlock = blockchain.createNewBlock(bestBlock, txs, false);
+//
+//            EventConsensus ev = new EventConsensus(EventConsensus.CALLBACK.ON_BLOCK_TEMPLATE);
+//            ev.setFuncArgs(Collections.singletonList(newBlock));
+//            eventMgr.newEvent(ev);
+//
+//            // update last timestamp
+//            lastUpdate.set(System.currentTimeMillis());
+//        }
     }
 
     public synchronized void shutdown() {

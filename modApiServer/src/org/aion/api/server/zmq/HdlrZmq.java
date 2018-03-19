@@ -66,50 +66,50 @@ public class HdlrZmq implements IHdlr {
         }
     }
 
-    public void getTxWait() {
-        TxWaitingMappingUpdate txWait = null;
-        try {
-            txWait = this.api.takeTxWait();
-
-            if (txWait.isDummy()) {
-                // shutdown process
-                return;
-            }
-
-        } catch (Throwable e) {
-            // TODO Auto-generated catch block
-            LOGGER.error("zmq takeTxWait failed! " + e.getMessage());
-        }
-        Map.Entry<ByteArrayWrapper, ByteArrayWrapper> entry = this.api.getMsgIdMapping().get(txWait.getTxHash());
-        while (entry == null) {
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                LOGGER.error("HdlrZmq.getTxWait exception " + e.getMessage());
-            }
-            entry = this.api.getMsgIdMapping().get(txWait.getTxHash());
-        }
-
-        this.api.getQueue().add(new TxPendingStatus(txWait.getTxHash(), entry.getValue(), entry.getKey(),
-                txWait.getState(), txWait.getTxResult()));
-
-        // INCLUDED(3);
-        if (txWait.getState() == 1 || txWait.getState() == 2) {
-            this.api.getPendingReceipts().put(txWait.getTxHash(), txWait.getTxReceipt());
-        } else {
-            this.api.getPendingReceipts().remove(txWait.getTxHash());
-            this.api.getMsgIdMapping().remove(txWait.getTxHash());
-        }
-    }
+//    public void getTxWait() {
+//        TxWaitingMappingUpdate txWait = null;
+//        try {
+//            txWait = this.api.takeTxWait();
+//
+//            if (txWait.isDummy()) {
+//                // shutdown process
+//                return;
+//            }
+//
+//        } catch (Throwable e) {
+//            // TODO Auto-generated catch block
+//            LOGGER.error("zmq takeTxWait failed! " + e.getMessage());
+//        }
+//        Map.Entry<ByteArrayWrapper, ByteArrayWrapper> entry = this.api.getMsgIdMapping().get(txWait.getTxHash());
+//        while (entry == null) {
+//            try {
+//                Thread.sleep(1);
+//            } catch (InterruptedException e) {
+//                // TODO Auto-generated catch block
+//                LOGGER.error("HdlrZmq.getTxWait exception " + e.getMessage());
+//            }
+//            entry = this.api.getMsgIdMapping().get(txWait.getTxHash());
+//        }
+//
+//        this.api.getQueue().add(new TxPendingStatus(txWait.getTxHash(), entry.getValue(), entry.getKey(),
+//                txWait.getState(), txWait.getTxResult()));
+//
+//        // INCLUDED(3);
+//        if (txWait.getState() == 1 || txWait.getState() == 2) {
+//            this.api.getPendingReceipts().put(txWait.getTxHash(), txWait.getTxReceipt());
+//        } else {
+//            this.api.getPendingReceipts().remove(txWait.getTxHash());
+//            this.api.getMsgIdMapping().remove(txWait.getTxHash());
+//        }
+//    }
 
     public Map<Long, Fltr> getFilter() {
         return this.api.getFilter();
     }
 
-    public LinkedBlockingQueue<TxPendingStatus> getTxStatusQueue() {
-        return this.api.getQueue();
-    }
+//    public LinkedBlockingQueue<TxPendingStatus> getTxStatusQueue() {
+//        return this.api.getQueue();
+//    }
 
     public byte[] toRspMsg(byte[] msgHash, int txCode) {
         return ApiUtil.toReturnHeader(this.api.getApiVersion(), txCode, msgHash);
@@ -129,7 +129,7 @@ public class HdlrZmq implements IHdlr {
     }
 
     public void shutdown() {
-        this.getTxStatusQueue().add(new TxPendingStatus(null, null, null, 0, null));
-        this.api.txWait.add(new TxWaitingMappingUpdate(null, 0, null));
+//        this.getTxStatusQueue().add(new TxPendingStatus(null, null, null, 0, null));
+//        this.api.txWait.add(new TxWaitingMappingUpdate(null, 0, null));
     }
 }
