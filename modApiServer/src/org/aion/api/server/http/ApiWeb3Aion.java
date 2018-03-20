@@ -62,6 +62,7 @@ final class ApiWeb3Aion extends ApiAion implements IRpc {
         super(_ac);
         this.pendingReceipts = Collections.synchronizedMap(new LRUMap<>(FLTRS_MAX, 100));
 
+        /*
         IHandler blkHr = this.ac.getAionHub().getEventMgr().getHandler(2);
         if (blkHr != null) {
             blkHr.eventCallback(
@@ -71,11 +72,9 @@ final class ApiWeb3Aion extends ApiAion implements IRpc {
                             IAionBlock b = bs.getBlock();
                             List<AionTransaction> txs = b.getTransactionsList();
 
-                            /*
-                             * TODO: fix it If dump empty txs list block to
-                             * onBlock filter leads null exception on
-                             * getTransactionReceipt
-                             */
+                             // TODO: fix it If dump empty txs list block to
+                             // onBlock filter leads null exception on
+                             // getTransactionReceipt
                             if (txs.size() > 0) {
                                 installedFilters.values().forEach((f) -> {
                                     switch (f.getType()) {
@@ -136,6 +135,7 @@ final class ApiWeb3Aion extends ApiAion implements IRpc {
                         }
                     });
         }
+        */
     }
 
     /*

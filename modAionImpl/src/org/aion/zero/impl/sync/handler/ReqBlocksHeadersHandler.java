@@ -77,6 +77,7 @@ public final class ReqBlocksHeadersHandler extends Handler {
 
     @Override
     public void receive(int _nodeIdHashcode, String _displayId, final byte[] _msgBytes) {
+        /*
         ReqBlocksHeaders reqHeaders = ReqBlocksHeaders.decode(_msgBytes);
         if (reqHeaders != null) {
             long fromBlock = reqHeaders.getFromBlock();
@@ -90,5 +91,6 @@ public final class ReqBlocksHeadersHandler extends Handler {
         } else
             this.log.error("<req-headers decode-msg msg-bytes={} from-node={}>",
                     _msgBytes == null ? 0 : _msgBytes.length, _nodeIdHashcode);
+    */
     }
 }

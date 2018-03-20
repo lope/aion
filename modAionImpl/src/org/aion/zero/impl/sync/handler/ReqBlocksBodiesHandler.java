@@ -71,6 +71,8 @@ public final class ReqBlocksBodiesHandler extends Handler {
 
     @Override
     public void receive(int _nodeIdHashcode, String _displayId, final byte[] _msgBytes) {
+        return;
+        /*
         ReqBlocksBodies reqBlocks = ReqBlocksBodies.decode(_msgBytes);
         if (reqBlocks != null) {
             List<byte[]> blockBodies = this.blockchain.getListOfBodiesByHashes(reqBlocks.getBlocksHashes());
@@ -82,5 +84,6 @@ public final class ReqBlocksBodiesHandler extends Handler {
 
         } else
             this.log.error("<req-bodies decode-msg>");
+        */
     }
 }
