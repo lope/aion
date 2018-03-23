@@ -352,8 +352,8 @@ public final class HttpServer
 
         // create a pool of 3 at first, expand to 6 if we can't keep up
         this.workers = new ThreadPoolExecutor(
-                3,
-                6,
+                Math.min(Runtime.getRuntime().availableProcessors(), 3),
+                Math.min(Runtime.getRuntime().availableProcessors(), 6),
                 60,
                 TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(10),
@@ -554,7 +554,6 @@ public final class HttpServer
                 LOG.debug("<rpc-worker - failed to process incoming request. closing socketchannel. msg: {}>", new String(readBytes).trim(), e);
             } finally {
                 try {
-                    System.out.println("sc.close();");
                     sc.close();
                 } catch (IOException e) {
                     LOG.error("<rpc-worker - socketchannel failed to close [8]>", e);
@@ -593,18 +592,19 @@ public final class HttpServer
                             tcpChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);
                             tcpChannel.configureBlocking(false);
                             tcpChannel.register(selector, SelectionKey.OP_READ);
-                        }
+                        } else if (sk.isReadable()) {
+                            SocketChannel sc = (SocketChannel) sk.channel();
 
-                        if (sk.isReadable()) {
                             try {
-                                SocketChannel sc = (SocketChannel) sk.channel();
                                 ByteBuffer readBuffer = ByteBuffer.allocate(1024 * 1024);
                                 while (sc.read(readBuffer) > 0) { }
                                 // dispatch to worker here
                                 // worker closes the socket after writing to it
                                 workers.submit(new TaskRespond(sc, readBuffer.array()));
                             } catch (Exception e) {
-                                closeSocket((SocketChannel) sk.channel());
+                                LOG.debug("<rpc-server - failed to read data from socket.>", e);
+                                sk.cancel();
+                                sc.close();
                             }
                         }
                     }
@@ -622,34 +622,7 @@ public final class HttpServer
         }
     }
 
-    /**
-     * @param _sc SocketChannel
-     */
-    private void closeSocket(final SocketChannel _sc) {
-        try {
-            SelectionKey sk = _sc.keyFor(selector);
-            _sc.close();
-            if (sk != null)
-                sk.cancel();
-        } catch (IOException e) {
-            LOG.debug("<rpc-server - error closing socket [10]>", e);
-        }
-    }
-
-    /*
-
-    private static ApiWeb3Aion api;
-    private Selector selector;
-    private ServerSocketChannel tcpServer;
-    private Thread tInbound;
-    private volatile boolean start; // no need to make it atomic boolean. volatile does the job
-    private ExecutorService workers;
-
-     */
-
-
-     //
-    public void shutdown() throws InterruptedException {
+    public void shutdown() {
         start = false;
 
         // wakeup the selector to run through the event loop one more time before exiting
@@ -693,25 +666,20 @@ public final class HttpServer
             this.tcpServer.configureBlocking(false);
             this.tcpServer.socket().setReuseAddress(true);
             this.tcpServer.socket().bind(address);
-        } catch (IOException e) {
-            LOG.info("<rpc-server-bind-failed bind={}:{}>", ip, port);
-            System.exit(1);
-        }
 
-        try {
             selector = Selector.open();
             tcpServer.register(selector, SelectionKey.OP_ACCEPT);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("<rpc-server-start bind={}:{}>", ip, port);
 
             tInbound = new Thread(new TaskInbound(), "rpc-server");
             tInbound.setPriority(Thread.NORM_PRIORITY);
             this.start = true;
 
             tInbound.start();
-        } catch (IOException ex) {
-            LOG.error("<rpc-server io-exception. potentially server failed to start [11]>");
+
+            LOG.info("<rpc-server - started on {}:{}>", ip, port);
+        } catch (IOException e) {
+            LOG.info("<rpc-server - failed to start. shutting down.>", e);
+            System.exit(1);
         }
     }
 }

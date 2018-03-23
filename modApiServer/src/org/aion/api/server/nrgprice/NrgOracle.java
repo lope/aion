@@ -71,7 +71,9 @@ public class NrgOracle {
 
         // check if handler is of type BLOCK, if so attach our event
         if (handler != null && handler.getType() == IHandler.TYPE.BLOCK0.getValue()) {
-            // TODO: Fixme. Commenting this out for now until I fix this, to relieve pressure from sync
+            // TODO: Fixme. Commenting this out for now until I implement a lazy strategy to compute
+            // and cache recommendation, to relieve pressure from sync, without this, it will just return the
+            // initially computed recommendation.
             /*
             handler.eventCallback(new EventCallbackA0<IBlock, ITransaction, ITxReceipt, IBlockSummary, ITxExecSummary, ISolution>() {
                 public void onBlock(final IBlockSummary _bs) {
