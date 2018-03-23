@@ -525,17 +525,15 @@ public abstract class ApiAion extends Api {
     // https://github.com/ethereum/wiki/wiki/Client-Version-Strings
     private String computeClientVersion() {
         try {
-            Pattern shortVersion = Pattern.compile("(\\d\\.\\d).*");
-            Matcher matcher = shortVersion.matcher(System.getProperty("java.version"));
-            matcher.matches();
-
-            return Arrays.asList(
+            String version =  Arrays.asList(
                     "Aion(J)",
                     "v" + Version.KERNEL_VERSION,
                     System.getProperty("os.name"),
-                    "Java" + matcher.group(1))
+                    "Java-" + System.getProperty("java.version"))
                     .stream()
                     .collect(Collectors.joining("/"));
+
+            return version;
         }
         catch(Exception e) {
             LOG.debug("client version string generation failed", e);
