@@ -107,6 +107,9 @@ final class ApiWeb3Aion extends ApiAion implements IRpc {
         if (txHr != null) {
             txHr.eventCallback(new EventCallbackA0<IBlock, ITransaction, ITxReceipt, IBlockSummary, ITxExecSummary, ISolution>() {
 
+                // commenting this out because of lack support for old web3 client that we are using
+                // TODO: re-enable this when we upgrade our web3 client
+                /*
                 public void onPendingTxUpdate(final ITxReceipt _txRcpt, final EventTx.STATE _state, final IBlock _blk) {
                     ByteArrayWrapper txHashW = new ByteArrayWrapper(((AionTxReceipt) _txRcpt).getTransaction().getHash());
                     if (_state.isPending() || _state == EventTx.STATE.DROPPED0) {
@@ -114,7 +117,7 @@ final class ApiWeb3Aion extends ApiAion implements IRpc {
                     } else {
                         pendingReceipts.remove(txHashW);
                     }
-                }
+                }*/
 
                 public void onPendingTxReceived(ITransaction _tx) {
                     // not absolutely neccessary to do eviction on installedFilters here, since we're doing it already
@@ -496,12 +499,15 @@ final class ApiWeb3Aion extends ApiAion implements IRpc {
         byte[] txHash = TypeConverter.StringHexToByteArray(_hash);
         TxRecpt r = getTransactionReceipt(txHash);
 
+        // commenting this out because of lack support for old web3 client that we are using
+        // TODO: re-enable this when we upgrade our web3 client
+        /*
         // if we can't find the receipt on the mainchain, try looking for it in pending receipts cache
         if (r == null) {
             AionTxReceipt pendingReceipt = pendingReceipts.get(new ByteArrayWrapper(txHash));
             r = new TxRecpt(pendingReceipt, null, null, null, true);
         }
-
+        */
         if (r == null)
             return new RpcMsg(JSONObject.NULL); // json rpc spec: 'or null when no receipt was found'
 
