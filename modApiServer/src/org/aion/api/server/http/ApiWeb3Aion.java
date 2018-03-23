@@ -38,8 +38,10 @@ import org.aion.crypto.HashUtil;
 import org.aion.equihash.Solution;
 import org.aion.evtmgr.IHandler;
 import org.aion.evtmgr.impl.callback.EventCallbackA0;
+import org.aion.evtmgr.impl.evt.EventConsensus;
 import org.aion.evtmgr.impl.evt.EventTx;
 import org.aion.mcf.vm.types.DataWord;
+import org.aion.zero.impl.AionBlockchainImpl;
 import org.aion.zero.impl.blockchain.AionImpl;
 import org.aion.zero.impl.blockchain.IAionChain;
 import org.aion.zero.impl.config.CfgAion;
@@ -61,6 +63,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.aion.base.util.ByteUtil.hexStringToBytes;
@@ -76,12 +79,41 @@ final class ApiWeb3Aion extends ApiAion implements IRpc {
     // TODO: Verify if need to use a concurrent map; locking may allow for use of a simple map
     private static HashMap<String, AionBlock> templateMap;
     private static ReadWriteLock templateMapLock;
+    volatile private AionBlock block = ((AionBlockStore)this.ac.getRepository().getBlockStore()).getBlocksByNumber(1).get(0).getKey();
+    ReentrantLock blockLock;
 
+    protected void createNewBlockTemplate() {
+
+        // TODO: Validate the trustworthiness of getNetworkBestBlock - can
+        // it be used in DDOS?
+        if (this.ac.getAionHub().getSyncMgr().getNetworkBestBlockNumber() - this.ac.getBlockchain().getBestBlock().getNumber() > 128) {
+            return;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Creating a new block template");
+        }
+
+        blockLock.lock();
+        try {
+            AionBlock bestBlock = this.ac.getBlockchain().getBlockByNumber(this.ac.getBlockchain().getBestBlock().getNumber());
+
+            List<AionTransaction> txs = pendingState.getPendingTransactions();
+
+            block = ((AionBlockchainImpl) this.ac.getBlockchain()).createNewBlock(bestBlock, txs, false);
+        } finally {
+            blockLock.unlock();
+        }
+
+
+    }
     ApiWeb3Aion(final IAionChain _ac) {
         super(_ac);
         pendingReceipts = Collections.synchronizedMap(new LRUMap<>(FLTRS_MAX, 100));
         templateMap = new HashMap<>();
         templateMapLock = new ReentrantReadWriteLock();
+        blockLock = new ReentrantLock();
+
 
 
         // Fill data on block and transaction events into the filters and pending receipts
@@ -100,8 +132,15 @@ final class ApiWeb3Aion extends ApiAion implements IRpc {
                         }
                     });
                 }
+
+                public void onBest(IBlock block, List<?> receipts) {
+
+                    createNewBlockTemplate();
+                }
             });
         }
+
+
 
         IHandler txHr = this.ac.getAionHub().getEventMgr().getHandler(IHandler.TYPE.TX0.getValue());
         if (txHr != null) {
@@ -713,7 +752,7 @@ final class ApiWeb3Aion extends ApiAion implements IRpc {
         // block hashes to the block. Allow multiple block templates at same height.
         templateMapLock.writeLock().lock();
 
-        AionBlock bestBlock = getBlockTemplate();
+        AionBlock bestBlock = block;
 
         // Check first entry in the map; if its height is higher a sync may
         // have switch branches, abandon current work to start on new branch

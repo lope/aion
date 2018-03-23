@@ -118,8 +118,7 @@ public abstract class ApiAion extends Api {
     }
 
     public AionBlock getBlockTemplate() {
-        // TODO: Change to follow onBlockTemplate event mode defined in internal
-        // miner
+        // TODO: Change to follow onBlockTemplate event mode defined in internal miner
         // TODO: Track multiple block templates
         AionBlock bestPendingState = ((AionPendingStateImpl) ac.getAionHub().getPendingState()).getBestBlock();
 
