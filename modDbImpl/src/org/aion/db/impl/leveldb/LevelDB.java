@@ -73,7 +73,7 @@ public class LevelDB extends AbstractDB {
         options.cacheSize(enableDbCache ? DEFAULT_CACHE_SIZE_BYTES : 0);
         options.paranoidChecks(true);
         options.verifyChecksums(true);
-        options.maxOpenFiles(32);
+        options.maxOpenFiles(1024);
 
         return options;
     }
