@@ -87,7 +87,7 @@ public class NodeMgr implements INodeMgr {
      *
      * @param selfShortId String
      */
-    void dumpNodeInfo(String selfShortId) {
+    public String dumpNodeInfo(String selfShortId) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         sb.append(String.format("================================================================== p2p-status-%6s ==================================================================\n", selfShortId));
@@ -138,7 +138,7 @@ public class NodeMgr implements INodeMgr {
             }
         }
         sb.append("\n");
-        System.out.println(sb.toString());
+        return sb.toString();
     }
 
     private void updateMetric(final Node _n) {
@@ -407,6 +407,18 @@ public class NodeMgr implements INodeMgr {
                     System.out.println("<error on-close-stream-writer>");
                 }
             }
+        }
+    }
+
+    /**
+     * Remove an active node if exists.
+     *
+     * @param nodeIdHash
+     */
+    public void removeActive(int nodeIdHash, P2pMgr p2pMgr) {
+        Node node = activeNodes.remove(nodeIdHash);
+        if (node != null) {
+            p2pMgr.closeSocket(node.getChannel());
         }
     }
 }
