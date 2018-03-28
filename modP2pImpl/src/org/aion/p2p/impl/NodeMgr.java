@@ -83,6 +83,14 @@ public class NodeMgr implements INodeMgr {
         return new String(hexChars);
     }
 
+    String nodeIdToString(byte[] id) {
+        return
+        new String(Arrays.copyOfRange(id, 0, 8)) + "-" +
+                new String(Arrays.copyOfRange(id, 9, 13)) + "-" +
+                new String(Arrays.copyOfRange(id, 14, 18)) + "-" +
+                new String(Arrays.copyOfRange(id, 19, 23)) + "-" +
+                new String(Arrays.copyOfRange(id, 24, 36));
+    }
     /**
      *
      * @param selfShortId String
@@ -119,9 +127,10 @@ public class NodeMgr implements INodeMgr {
             });
             for (Node n : sorted) {
                 try{
+                    byte[] nId = n.getId();
                     sb.append(
-                        String.format("id:%6s %c %16s %10d %64s %15s %5d %8s %15s\n",
-                            n.getIdShort(),
+                        String.format("id:%20s %c %16s %10d %64s %15s %5d %8s %15s\n",
+                            nodeIdToString(n.getId()),
                             n.getIfFromBootList() ? 'y' : ' ',
                             n.getTotalDifficulty().toString(10),
                             n.getBestBlockNumber(),

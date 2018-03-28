@@ -265,7 +265,8 @@ public final class  P2pMgr implements IP2pMgr {
                     Thread.sleep(PERIOD_CLEAR);
 
                     //selectorLock.lock();
-                    nodeMgr.rmTimeOutInbound(P2pMgr.this);
+                    // NEVER TIMEOUT ANY PEERS
+                    //nodeMgr.rmTimeOutInbound(P2pMgr.this);
                     //selectorLock.unlock();
 
                     // clean up temp nodes list if metric failed.
