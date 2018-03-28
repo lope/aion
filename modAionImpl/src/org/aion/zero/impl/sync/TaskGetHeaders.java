@@ -63,13 +63,34 @@ final class TaskGetHeaders implements Runnable {
 
     @Override
     public void run() {
-        Set<Integer> ids = new HashSet<>();
+        //Set<Integer> ids = new HashSet<>();
         Collection<INode> preFilter = this.p2p.getActiveNodes().values();
 
-        List<INode> filtered = preFilter.stream().filter(
-                (n) -> n.getTotalDifficulty() != null &&
-                        n.getTotalDifficulty().compareTo(this.selfTd) >= 0
-        ).collect(Collectors.toList());
+        List<INode> filtered = preFilter.stream()
+                .filter((n) -> n.getTotalDifficulty() != null &&
+                        n.getTotalDifficulty().compareTo(this.selfTd) >= 0)
+                .sorted(
+                    Comparator.comparing(INode::getTotalDifficulty)
+                        .thenComparing(INode::getBestBlockNumber)
+                        .reversed()
+                )
+                .collect(Collectors.toList());
+
+        // dashboard modified algorithm: pick highest difficulty peer (break ties by highest block number)
+        // and only sync with them
+        if (filtered.size() > 0) {
+            INode node = filtered.get(0);
+            ReqBlocksHeaders rbh = new ReqBlocksHeaders(this.fromBlock, this.syncMax);
+
+            if (log.isDebugEnabled())
+                log.debug("<get-headers from-num={} size={} node={}>", fromBlock, syncMax, node.getIdShort());
+
+            this.p2p.send(node.getIdHash(), rbh);
+        }
+
+
+        /*
+        // standard algorithm
 
         if (filtered.size() > 0) {
             Random r = new Random(System.currentTimeMillis());
@@ -87,5 +108,6 @@ final class TaskGetHeaders implements Runnable {
                 }
             }
         }
+        */
     }
 }
