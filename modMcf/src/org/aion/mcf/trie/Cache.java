@@ -34,17 +34,6 @@
  ******************************************************************************/
 package org.aion.mcf.trie;
 
-import static org.aion.base.util.ByteArrayWrapper.wrap;
-import static org.aion.rlp.Value.fromRlpEncoded;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
 import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.crypto.HashUtil;
@@ -52,6 +41,11 @@ import org.aion.log.AionLoggerFactory;
 import org.aion.log.LogEnum;
 import org.aion.rlp.Value;
 import org.slf4j.Logger;
+
+import java.util.*;
+
+import static org.aion.base.util.ByteArrayWrapper.wrap;
+import static org.aion.rlp.Value.fromRlpEncoded;
 
 /**
  * Cache class
@@ -69,7 +63,7 @@ public class Cache {
         this.dataSource = dataSource;
     }
 
-    public synchronized void markRemoved(byte[] key) {
+    public void markRemoved(byte[] key) {
         ByteArrayWrapper keyW = new ByteArrayWrapper(key);
         removedNodes.add(keyW);
         nodes.remove(keyW);
@@ -82,9 +76,9 @@ public class Cache {
      *         the Node which could be a pair-, multi-item Node or single
      *         Value
      * @return keccak hash of RLP encoded node if length &gt; 32 otherwise
-     * return node itself
+     *         return node itself
      */
-    public synchronized Object put(Object o) {
+    public Object put(Object o) {
         Value value = new Value(o);
         byte[] enc = value.encode();
         if (enc.length >= 32) {
@@ -99,7 +93,7 @@ public class Cache {
         return value;
     }
 
-    public synchronized Value get(byte[] key) {
+    public Value get(byte[] key) {
 
         ByteArrayWrapper wrappedKey = wrap(key);
         Node node = nodes.get(wrappedKey);
@@ -120,7 +114,7 @@ public class Cache {
         return null;
     }
 
-    public synchronized void delete(byte[] key) {
+    public void delete(byte[] key) {
         ByteArrayWrapper wrappedKey = wrap(key);
         this.nodes.remove(wrappedKey);
 
@@ -129,11 +123,11 @@ public class Cache {
         }
     }
 
-    public synchronized void commit() {
+    public void commit() {
         commit(true);
     }
 
-    public synchronized void commit(boolean flushCache) {
+    public void commit(boolean flushCache) {
         // Don't try to commit if it isn't dirty
         if ((dataSource == null) || !this.isDirty) {
             // clear cache when flush requested
@@ -177,7 +171,7 @@ public class Cache {
 
     }
 
-    public synchronized void undo() {
+    public void undo() {
         Iterator<Map.Entry<ByteArrayWrapper, Node>> iter = this.nodes.entrySet().iterator();
         while (iter.hasNext()) {
             if (iter.next().getValue().isDirty()) {
@@ -187,19 +181,19 @@ public class Cache {
         this.isDirty = false;
     }
 
-    public synchronized boolean isDirty() {
+    public boolean isDirty() {
         return isDirty;
     }
 
-    public synchronized void setDirty(boolean isDirty) {
+    public void setDirty(boolean isDirty) {
         this.isDirty = isDirty;
     }
 
-    public synchronized Map<ByteArrayWrapper, Node> getNodes() {
+    public Map<ByteArrayWrapper, Node> getNodes() {
         return nodes;
     }
 
-    public synchronized IByteArrayKeyValueStore getDb() {
+    public IByteArrayKeyValueStore getDb() {
         return dataSource;
     }
 
@@ -215,7 +209,7 @@ public class Cache {
         return cacheDump.toString();
     }
 
-    public synchronized void setDB(IByteArrayKeyValueStore kvds) {
+    public void setDB(IByteArrayKeyValueStore kvds) {
         if (this.dataSource == kvds) {
             return;
         }
