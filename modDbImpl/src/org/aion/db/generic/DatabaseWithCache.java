@@ -59,24 +59,36 @@ public class DatabaseWithCache implements IByteArrayKeyValueDatabase {
 
     private static final Logger LOG = AionLoggerFactory.getLogger(LogEnum.DB.name());
 
-    /** Underlying database implementation. */
+    /**
+     * Underlying database implementation.
+     */
     protected AbstractDB database;
-    /** Underlying cache implementation that will be instantiated by default as a LRU cache. */
+    /**
+     * Underlying cache implementation that will be instantiated by default as a LRU cache.
+     */
     private LoadingCache<ByteArrayWrapper, Optional<byte[]>> loadingCache = null;
 
-    /** Keeps track of the entries that have been modified. */
+    /**
+     * Keeps track of the entries that have been modified.
+     */
     private Map<ByteArrayWrapper, byte[]> dirtyEntries = null;
 
-    /** The underlying cache max size, will default to DEFAULT_JAVA_CACHE_SIZE at first. */
+    /**
+     * The underlying cache max size, will default to DEFAULT_JAVA_CACHE_SIZE at first.
+     */
     private long maxSize;
 
-    /** The flag to indicate if the stats are enabled or not. */
+    /**
+     * The flag to indicate if the stats are enabled or not.
+     */
     private boolean statsEnabled;
-    /** Flag for determining how to handle commits. */
+    /**
+     * Flag for determining how to handle commits.
+     */
     private boolean enableAutoCommit;
 
     public DatabaseWithCache(AbstractDB _database, boolean enableAutoCommit, String max_cache_size,
-            boolean enableStats) {
+                             boolean enableStats) {
         this(enableAutoCommit, max_cache_size, enableStats);
         database = _database;
     }
@@ -164,7 +176,7 @@ public class DatabaseWithCache implements IByteArrayKeyValueDatabase {
      * Throws a {@link RuntimeException} if the database connection is closed.
      *
      * @implNote Always do this check after acquiring a lock on the class/data.
-     *         Otherwise it might produce inconsistent results due to lack of synchronization.
+     * Otherwise it might produce inconsistent results due to lack of synchronization.
      */
     private void check() {
         if (!database.isOpen()) {
@@ -177,7 +189,7 @@ public class DatabaseWithCache implements IByteArrayKeyValueDatabase {
      * Used to ensure that locks are released after normal or exceptional execution.
      *
      * @return {@code true} when the resource is locked,
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     @Override
     public boolean isLocked() {
@@ -468,12 +480,17 @@ public class DatabaseWithCache implements IByteArrayKeyValueDatabase {
         }
     }
 
+    @Override
+    public void deleteAllExcept(Collection<ByteArrayWrapper> keys) {
+// TODO
+    }
+
     /**
      * Pushes all the dirty key-value pairs to the database.
      * Does not make any guarantees with respect to their continued / discontinued storage in the cache.
      *
      * @apiNote This method should be used where write locks have already been acquired
-     *         since it does not acquire write locks before modifying the data.
+     * since it does not acquire write locks before modifying the data.
      */
     private void flushInternal() {
         if (isStatsEnabled()) {

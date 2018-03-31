@@ -37,11 +37,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.base.util.ByteArrayWrapper;
@@ -751,4 +747,31 @@ public class TrieImpl implements Trie {
         }
     }
 
+    @Override
+    public Set<ByteArrayWrapper> getFullStateKeysFromRoot(byte[] stateRoot) {
+
+        synchronized (cache) {
+            Set<ByteArrayWrapper> output = new HashSet<>();
+
+            ExtractAllKeys traceAction = new ExtractAllKeys();
+            Value value = new Value(stateRoot);
+
+            if (value.isHashCode()) {
+                scanTree(stateRoot, traceAction);
+            } else {
+                traceAction.doOnNode(stateRoot, value);
+            }
+
+            output.addAll(traceAction.getOutput());
+
+            return output;
+        }
+    }
+
+    @Override
+    public void pruneAllExcept(Set<ByteArrayWrapper> keys){
+        synchronized (cache){
+            cache.getDb().deleteAllExcept(keys);
+        }
+    }
 }

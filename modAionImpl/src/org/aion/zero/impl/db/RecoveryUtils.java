@@ -23,13 +23,17 @@
 package org.aion.zero.impl.db;
 
 import org.aion.base.type.IBlock;
+import org.aion.base.util.ByteArrayWrapper;
 import org.aion.log.AionLoggerFactory;
 import org.aion.mcf.db.IBlockStoreBase;
 import org.aion.zero.impl.AionBlockchainImpl;
 import org.aion.zero.impl.config.CfgAion;
+import org.aion.zero.impl.types.AionBlock;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class RecoveryUtils {
 
@@ -148,5 +152,35 @@ public class RecoveryUtils {
 
         // ok if we managed to get down to the expected block
         return (nbBestBlock == nbBlock) ? Status.SUCCESS : Status.FAILURE;
+    }
+
+
+    public static void archiveState() {
+        // ensure mining is disabled
+        CfgAion cfg = CfgAion.inst();
+        cfg.dbFromXML();
+        cfg.getConsensus().setMining(false);
+
+        Map<String, String> cfgLog = new HashMap<>();
+        cfgLog.put("DB", "INFO");
+
+        AionLoggerFactory.init(cfgLog);
+
+        // get the current blockchain
+        AionRepositoryImpl repository = AionRepositoryImpl.inst();
+
+        AionBlockStore store = repository.getBlockStore();
+
+        long topBlock = store.getMaxNumber();
+        Set<ByteArrayWrapper> usefulKeys = new HashSet<>();
+
+        while (topBlock - 200 > 0) {
+            AionBlock block = store.getChainBlockByNumber(topBlock);
+            byte[] stateRoot = block.getStateRoot();
+            usefulKeys.addAll(repository.getWorldState().getFullStateKeysFromRoot(stateRoot));
+            topBlock--;
+        }
+        repository.getWorldState().pruneAllExcept(usefulKeys);
+        repository.close();
     }
 }

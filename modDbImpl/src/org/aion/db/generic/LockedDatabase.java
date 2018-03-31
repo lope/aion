@@ -1,6 +1,7 @@
 package org.aion.db.generic;
 
 import org.aion.base.db.IByteArrayKeyValueDatabase;
+import org.aion.base.util.ByteArrayWrapper;
 import org.aion.log.AionLoggerFactory;
 import org.aion.log.LogEnum;
 import org.slf4j.Logger;
@@ -21,10 +22,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class LockedDatabase implements IByteArrayKeyValueDatabase {
 
-    /** Unlocked database. */
+    /**
+     * Unlocked database.
+     */
     private final IByteArrayKeyValueDatabase database;
 
-    /** Read-write lock allowing concurrent reads and single write operations. */
+    /**
+     * Read-write lock allowing concurrent reads and single write operations.
+     */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     protected static final Logger LOG = AionLoggerFactory.getLogger(LogEnum.DB.name());
@@ -298,5 +303,10 @@ public class LockedDatabase implements IByteArrayKeyValueDatabase {
             // releasing write lock
             lock.writeLock().unlock();
         }
+    }
+
+    @Override
+    public void deleteAllExcept(Collection<ByteArrayWrapper> keys) {
+// TODO
     }
 }

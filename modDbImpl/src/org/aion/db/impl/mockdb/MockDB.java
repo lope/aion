@@ -148,6 +148,11 @@ public class MockDB extends AbstractDB {
         }
     }
 
+    @Override
+    public void deleteAllExcept(Collection<ByteArrayWrapper> keys) {
+// TODO
+    }
+
     // AbstractDB functionality ----------------------------------------------------------------------------------------
 
     public boolean commitCache(Map<ByteArrayWrapper, byte[]> cache) {

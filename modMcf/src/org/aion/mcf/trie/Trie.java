@@ -20,6 +20,10 @@
  *******************************************************************************/
 package org.aion.mcf.trie;
 
+import org.aion.base.util.ByteArrayWrapper;
+
+import java.util.Set;
+
 /**
  * Trie interface for the main data structure in Ethereum
  * which is used to store both the account state and storage of each account.
@@ -29,8 +33,7 @@ public interface Trie {
     /**
      * Gets a value from the trie for a given key
      *
-     * @param key
-     *         - any length byte array
+     * @param key - any length byte array
      * @return an rlp encoded byte array of the stored object
      */
     byte[] get(byte[] key);
@@ -38,18 +41,15 @@ public interface Trie {
     /**
      * Insert or update a value in the trie for a specified key
      *
-     * @param key
-     *         - any length byte array
-     * @param value
-     *         rlp encoded byte array of the object to store
+     * @param key   - any length byte array
+     * @param value rlp encoded byte array of the object to store
      */
     void update(byte[] key, byte[] value);
 
     /**
      * Deletes a key/value from the trie for a given key
      *
-     * @param key
-     *         - any length byte array
+     * @param key - any length byte array
      */
     void delete(byte[] key);
 
@@ -63,16 +63,14 @@ public interface Trie {
     /**
      * Set the top node of the trie
      *
-     * @param root
-     *         - 32-byte SHA-3 hash of the root node
+     * @param root - 32-byte SHA-3 hash of the root node
      */
     void setRoot(byte[] root);
 
     /**
      * Used to check for corruption in the database.
      *
-     * @param root
-     *         a world state trie root
+     * @param root a world state trie root
      * @return {@code true} if the root is valid, {@code false} otherwise
      */
     boolean isValidRoot(byte[] root);
@@ -94,4 +92,7 @@ public interface Trie {
 
     boolean validate();
 
+    Set<ByteArrayWrapper> getFullStateKeysFromRoot(byte[] stateRoot);
+
+    void pruneAllExcept(Set<ByteArrayWrapper> keys);
 }

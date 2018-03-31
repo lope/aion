@@ -48,7 +48,7 @@ import java.util.Set;
 
 /**
  * @implNote The read-write lock is used only for those operations that are not synchronized
- *         by the JNI on top of the native LevelDB, namely open and close operations.
+ * by the JNI on top of the native LevelDB, namely open and close operations.
  */
 public class LevelDB extends AbstractDB {
 
@@ -78,7 +78,7 @@ public class LevelDB extends AbstractDB {
      * <p>Original constructor for LevelDB, to keep compatibility with tests, for
      * future use the user should set the {@link #maxOpenFiles} and {@link #blockSize}
      * directly.</p>
-     *
+     * <p>
      * <p>Note: the values set in this constructor are not optimal, only historical.</p>
      */
     @Deprecated
@@ -86,7 +86,7 @@ public class LevelDB extends AbstractDB {
                    String path,
                    boolean enableCache,
                    boolean enableCompression) {
-        this(   name,
+        this(name,
                 path,
                 enableCache,
                 enableCompression,
@@ -181,7 +181,7 @@ public class LevelDB extends AbstractDB {
     @Override
     public void compact() {
         LOG.info("Compacting " + this.toString() + ".");
-        db.compactRange(new byte[] { (byte) 0x00 }, new byte[] { (byte) 0xff });
+        db.compactRange(new byte[]{(byte) 0x00}, new byte[]{(byte) 0xff});
     }
 
     @Override
@@ -280,6 +280,7 @@ public class LevelDB extends AbstractDB {
         db.delete(k);
     }
 
+
     @Override
     public void putBatch(Map<byte[], byte[]> inputMap) {
         check(inputMap.keySet());
@@ -319,6 +320,37 @@ public class LevelDB extends AbstractDB {
             // add delete operations to batch
             for (byte[] k : keys) {
                 batch.delete(k);
+            }
+
+            // bulk atomic update
+            db.write(batch);
+        } catch (DBException e) {
+            LOG.error("Unable to execute batch delete operation on " + this.toString() + ".", e);
+        } catch (IOException e) {
+            LOG.error("Unable to close WriteBatch object in " + this.toString() + ".", e);
+        }
+    }
+
+    @Override
+    public void deleteAllExcept(Collection<ByteArrayWrapper> keys) {
+        check();
+
+        try (WriteBatch batch = db.createWriteBatch()) {
+
+            try (DBIterator itr = db.iterator()) {
+                // extract keys
+                for (itr.seekToFirst(); itr.hasNext(); itr.next()) {
+                    ByteArrayWrapper key = ByteArrayWrapper.wrap(itr.peekNext().getKey());
+                    if (!keys.contains(key)) {
+                        // add delete operations to batch
+                        batch.delete(key.getData());
+                    } else {
+                        // already seen, remove to reduce set size
+                        keys.remove(key);
+                    }
+                }
+            } catch (Exception e) {
+                LOG.error("Unable to extract keys from database " + this.toString() + ".", e);
             }
 
             // bulk atomic update

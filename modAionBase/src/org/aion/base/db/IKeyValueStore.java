@@ -34,6 +34,8 @@
  ******************************************************************************/
 package org.aion.base.db;
 
+import org.aion.base.util.ByteArrayWrapper;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -169,4 +171,5 @@ public interface IKeyValueStore<K, V> extends AutoCloseable {
      */
     void deleteBatch(Collection<K> keys);
 
+    void deleteAllExcept(Collection<ByteArrayWrapper> keys);
 }
