@@ -34,6 +34,7 @@
  ******************************************************************************/
 package org.aion.db.impl.h2;
 
+import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.db.impl.AbstractDB;
 import org.h2.mvstore.FileStore;
@@ -325,8 +326,8 @@ public class H2MVMap extends AbstractDB {
     }
 
     @Override
-    public void deleteAllExcept(Collection<ByteArrayWrapper> keys) {
-// TODO
+    public void deleteAll() {
+        // TODO
     }
 
     // AbstractDB functionality ----------------------------------------------------------------------------------------
@@ -391,4 +392,5 @@ public class H2MVMap extends AbstractDB {
         // store.sync() a "harder" flush to disk using
         // FileChannel.force(true)
     }
+
 }

@@ -130,6 +130,11 @@ public class Cli {
                         }
                     }
                     break;
+                case "-p":
+                    System.out.println("Pruning state ....");
+                    RecoveryUtils.archiveState(Integer.parseInt(args[1]));
+                    System.out.println("Finished pruning state.");
+                    break;
                 case "-v":
                     System.out.println("\nVersion");
                     System.out.println("--------------------------------------------");
@@ -145,6 +150,7 @@ public class Cli {
             System.out.println("");
         } catch (Throwable e) {
             System.out.println("");
+            e.printStackTrace();
             return 1;
         }
 

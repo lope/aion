@@ -22,18 +22,17 @@
  ******************************************************************************/
 package org.aion.zero.impl.db;
 
+import org.aion.base.db.IByteArrayKeyValueDatabase;
 import org.aion.base.type.IBlock;
 import org.aion.base.util.ByteArrayWrapper;
+import org.aion.db.impl.DatabaseFactory;
 import org.aion.log.AionLoggerFactory;
 import org.aion.mcf.db.IBlockStoreBase;
 import org.aion.zero.impl.AionBlockchainImpl;
 import org.aion.zero.impl.config.CfgAion;
 import org.aion.zero.impl.types.AionBlock;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class RecoveryUtils {
 
@@ -88,7 +87,6 @@ public class RecoveryUtils {
         AionBlockchainImpl blockchain = AionBlockchainImpl.inst();
 
         IBlockStoreBase store = blockchain.getBlockStore();
-
 
         IBlock bestBlock = store.getBestBlock();
         if (bestBlock == null) {
@@ -154,8 +152,7 @@ public class RecoveryUtils {
         return (nbBestBlock == nbBlock) ? Status.SUCCESS : Status.FAILURE;
     }
 
-
-    public static void archiveState() {
+    public static void archiveState(int numberOfBlocks) {
         // ensure mining is disabled
         CfgAion cfg = CfgAion.inst();
         cfg.dbFromXML();
@@ -173,14 +170,57 @@ public class RecoveryUtils {
 
         long topBlock = store.getMaxNumber();
         Set<ByteArrayWrapper> usefulKeys = new HashSet<>();
-
-        while (topBlock - 200 > 0) {
-            AionBlock block = store.getChainBlockByNumber(topBlock);
-            byte[] stateRoot = block.getStateRoot();
-            usefulKeys.addAll(repository.getWorldState().getFullStateKeysFromRoot(stateRoot));
-            topBlock--;
+        long targetBlock = topBlock - numberOfBlocks;
+        if (targetBlock < 0) {
+            targetBlock = 0;
         }
-        repository.getWorldState().pruneAllExcept(usefulKeys);
+
+        System.out.println("Creating swap database.");
+        Properties props = new Properties();
+        props.setProperty("db_type", cfg.getDb().getVendor());
+        props.setProperty("db_name", "swap");
+        props.setProperty("db_path", cfg.getDb().getPath());
+        props.setProperty("enable_auto_commit", "true");
+        props.setProperty("enable_db_cache", "true");
+        props.setProperty("enable_db_compression", "false");
+        props.setProperty("enable_heap_cache", "false");
+        props.setProperty("max_fd_alloc_size", String.valueOf(cfg.getDb().getFdOpenAllocSize()));
+        props.setProperty("block_size", String.valueOf(cfg.getDb().getBlockSize()));
+        props.setProperty("write_buffer_size", String.valueOf(cfg.getDb().getWriteBufferSize()));
+        props.setProperty("cache_size", String.valueOf(cfg.getDb().getCacheSize()));
+
+        IByteArrayKeyValueDatabase swapDB = DatabaseFactory.connect(props);
+
+        // open the database connection
+        swapDB.open();
+
+        // check object status
+        if (swapDB == null) {
+            System.out.println("Swap database connection could not be established.");
+        }
+
+        // check persistence status
+        if (!swapDB.isCreatedOnDisk()) {
+            System.out.println("Sawp database cannot be saved to disk.");
+        }
+
+        // trace full state for bottom block to swap database
+        System.out.println("Getting full state for " + targetBlock);
+        AionBlock block = store.getChainBlockByNumber(targetBlock);
+        byte[] stateRoot = block.getStateRoot();
+        repository.getWorldState().saveDiffStateToDatabase(stateRoot, swapDB);
+
+        while (topBlock > targetBlock) {
+            targetBlock++;
+            System.out.println("Getting diff state for " + targetBlock);
+            block = store.getChainBlockByNumber(targetBlock);
+            stateRoot = block.getStateRoot();
+            repository.getWorldState().saveDiffStateToDatabase(stateRoot, swapDB);
+        }
+
+        repository.getWorldState().pruneAllExcept(swapDB);
+        swapDB.close();
         repository.close();
     }
+
 }

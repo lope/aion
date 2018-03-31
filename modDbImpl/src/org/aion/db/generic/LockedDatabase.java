@@ -1,7 +1,7 @@
 package org.aion.db.generic;
 
 import org.aion.base.db.IByteArrayKeyValueDatabase;
-import org.aion.base.util.ByteArrayWrapper;
+import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.log.AionLoggerFactory;
 import org.aion.log.LogEnum;
 import org.slf4j.Logger;
@@ -306,7 +306,12 @@ public class LockedDatabase implements IByteArrayKeyValueDatabase {
     }
 
     @Override
-    public void deleteAllExcept(Collection<ByteArrayWrapper> keys) {
-// TODO
+    public void deleteAll() {
+        // TODO
+    }
+
+    @Override
+    public void deleteAllExcept(IByteArrayKeyValueStore db) {
+
     }
 }

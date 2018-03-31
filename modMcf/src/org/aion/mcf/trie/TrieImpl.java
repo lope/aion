@@ -20,25 +20,7 @@
  *******************************************************************************/
 package org.aion.mcf.trie;
 
-import static java.util.Arrays.copyOfRange;
-import static org.aion.base.util.ByteArrayWrapper.wrap;
-import static org.aion.base.util.ByteUtil.EMPTY_BYTE_ARRAY;
-import static org.aion.base.util.ByteUtil.matchingNibbleLength;
-import static org.aion.crypto.HashUtil.EMPTY_TRIE_HASH;
-import static org.aion.rlp.CompactEncoder.binToNibbles;
-import static org.aion.rlp.CompactEncoder.hasTerminator;
-import static org.aion.rlp.CompactEncoder.packNibbles;
-import static org.aion.rlp.CompactEncoder.unpackToNibbles;
-import static org.aion.rlp.RLP.calcElementPrefixSize;
-import static org.spongycastle.util.Arrays.concatenate;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.*;
-
+import org.aion.base.db.IByteArrayKeyValueDatabase;
 import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.base.util.FastByteComparisons;
@@ -48,6 +30,18 @@ import org.aion.rlp.RLP;
 import org.aion.rlp.RLPItem;
 import org.aion.rlp.RLPList;
 import org.aion.rlp.Value;
+
+import java.io.*;
+import java.util.*;
+
+import static java.util.Arrays.copyOfRange;
+import static org.aion.base.util.ByteArrayWrapper.wrap;
+import static org.aion.base.util.ByteUtil.EMPTY_BYTE_ARRAY;
+import static org.aion.base.util.ByteUtil.matchingNibbleLength;
+import static org.aion.crypto.HashUtil.EMPTY_TRIE_HASH;
+import static org.aion.rlp.CompactEncoder.*;
+import static org.aion.rlp.RLP.calcElementPrefixSize;
+import static org.spongycastle.util.Arrays.concatenate;
 
 /**
  * The modified Merkle Patricia tree (trie) provides a persistent data structure
@@ -747,7 +741,6 @@ public class TrieImpl implements Trie {
         }
     }
 
-    @Override
     public Set<ByteArrayWrapper> getFullStateKeysFromRoot(byte[] stateRoot) {
 
         synchronized (cache) {
@@ -769,9 +762,44 @@ public class TrieImpl implements Trie {
     }
 
     @Override
-    public void pruneAllExcept(Set<ByteArrayWrapper> keys){
-        synchronized (cache){
-            cache.getDb().deleteAllExcept(keys);
+    public void saveFullStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db) {
+
+        synchronized (cache) {
+            ExtractToDatabase traceAction = new ExtractToDatabase(db);
+            Value value = new Value(stateRoot);
+
+            if (value.isHashCode()) {
+                scanTree(stateRoot, traceAction);
+            } else {
+                traceAction.doOnNode(stateRoot, value);
+            }
         }
     }
+
+    @Override
+    public void saveDiffStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db) {
+
+        synchronized (cache) {
+            ExtractToDatabase traceAction = new ExtractToDatabase(db);
+            Value value = new Value(stateRoot);
+
+            if (value.isHashCode() && !db.get(value.asBytes()).isPresent()) {
+                scanTree(stateRoot, traceAction);
+            } else {
+                traceAction.doOnNode(stateRoot, value);
+            }
+        }
+    }
+
+    @Override
+    public void pruneAllExcept(IByteArrayKeyValueDatabase db) {
+        synchronized (cache) {
+            // delete everything from database
+            cache.getDb().deleteAllExcept(db);
+
+            // clean swap database
+            db.deleteAll();
+        }
+    }
+
 }

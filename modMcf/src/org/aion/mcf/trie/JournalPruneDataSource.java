@@ -40,6 +40,11 @@ import java.util.*;
 public class JournalPruneDataSource<BLK extends IBlock<?, ?>, BH extends IBlockHeader>
         implements IByteArrayKeyValueStore {
 
+    @Override
+    public void deleteAllExcept(IByteArrayKeyValueStore db) {
+
+    }
+
     private class Updates {
 
         BH blockHeader;
@@ -235,6 +240,11 @@ public class JournalPruneDataSource<BLK extends IBlock<?, ?>, BH extends IBlockH
     @Override
     public void deleteBatch(Collection<byte[]> keys) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void deleteAll() {
+        // TODO
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.aion.db.impl.mockdb;
 
+import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.db.impl.AbstractDB;
 
@@ -149,8 +150,8 @@ public class MockDB extends AbstractDB {
     }
 
     @Override
-    public void deleteAllExcept(Collection<ByteArrayWrapper> keys) {
-// TODO
+    public void deleteAll() {
+        // TODO
     }
 
     // AbstractDB functionality ----------------------------------------------------------------------------------------

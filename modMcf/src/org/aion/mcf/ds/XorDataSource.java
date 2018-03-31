@@ -34,7 +34,6 @@
  ******************************************************************************/
 package org.aion.mcf.ds;
 
-import org.aion.base.db.IByteArrayKeyValueDatabase;
 import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.base.util.ByteUtil;
@@ -105,9 +104,18 @@ public class XorDataSource implements IByteArrayKeyValueStore {
     }
 
     @Override
+    public void deleteAll() {
+        // TODO
+    }
+
+    @Override
     public boolean isEmpty() {
         // TODO Auto-generated method stub
         return false;
     }
 
+    @Override
+    public void deleteAllExcept(IByteArrayKeyValueStore db) {
+
+    }
 }

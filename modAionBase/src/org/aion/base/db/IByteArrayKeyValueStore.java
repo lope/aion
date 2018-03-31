@@ -35,4 +35,5 @@
 package org.aion.base.db;
 
 public interface IByteArrayKeyValueStore extends IKeyValueStore<byte[], byte[]> {
+    void deleteAllExcept(IByteArrayKeyValueStore db);
 }

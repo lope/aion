@@ -35,6 +35,7 @@
 package org.aion.db.impl;
 
 import org.aion.base.db.IByteArrayKeyValueDatabase;
+import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.log.AionLoggerFactory;
 import org.aion.log.LogEnum;
@@ -194,4 +195,7 @@ public abstract class AbstractDB implements IByteArrayKeyValueDatabase {
      */
     protected abstract byte[] getInternal(byte[] k);
 
+    public void deleteAllExcept(IByteArrayKeyValueStore _to_db) {
+        // TODO
+    }
 }
