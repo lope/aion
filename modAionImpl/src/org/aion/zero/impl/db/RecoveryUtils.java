@@ -182,7 +182,7 @@ public class RecoveryUtils {
         props.setProperty("db_path", cfg.getDb().getPath());
         props.setProperty("enable_auto_commit", "true");
         props.setProperty("enable_db_cache", "true");
-        props.setProperty("enable_db_compression", "false");
+        props.setProperty("enable_db_compression", "true");
         props.setProperty("enable_heap_cache", "false");
         props.setProperty("max_fd_alloc_size", String.valueOf(cfg.getDb().getFdOpenAllocSize()));
         props.setProperty("block_size", String.valueOf(cfg.getDb().getBlockSize()));
