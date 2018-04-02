@@ -365,14 +365,14 @@ public class LevelDB extends AbstractDB {
     }
 
     @Override
-    public void deleteAllExcept(IByteArrayKeyValueStore _to_db) {
-        LOG.info("Deleting all keys from " + this.toString() + " that are not in " + _to_db.toString());
+    public void deleteAllExcept(IByteArrayKeyValueStore edb) {
+        LOG.info("Deleting all keys from " + this.toString() + " that are not in " + edb.toString());
 
         try (DBIterator itr = db.iterator()) {
             // extract keys
             for (itr.seekToFirst(); itr.hasNext(); itr.next()) {
                 byte[] key = itr.peekNext().getKey();
-                if (!_to_db.get(key).isPresent()) {
+                if (!edb.get(key).isPresent()) {
                     db.delete(key);
                 }
             }

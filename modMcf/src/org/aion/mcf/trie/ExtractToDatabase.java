@@ -45,6 +45,7 @@ public class ExtractToDatabase implements TrieImpl.ScanAction {
     // only the keys matter
     byte[] dummy_value = new byte[] { 0 };
     IByteArrayKeyValueDatabase db;
+    public int count = 0;
 
     public ExtractToDatabase(IByteArrayKeyValueDatabase _db) {
         this.db = _db;
@@ -53,5 +54,6 @@ public class ExtractToDatabase implements TrieImpl.ScanAction {
     @Override
     public void doOnNode(byte[] hash, Value node) {
         db.put(hash, dummy_value);
+        count++;
     }
 }

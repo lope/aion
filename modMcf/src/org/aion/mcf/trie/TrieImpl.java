@@ -599,6 +599,84 @@ public class TrieImpl implements Trie {
         }
     }
 
+    public void scanTreeLoop(byte[] hash, ScanAction scanAction) {
+
+        ArrayList<byte[]> hashes = new ArrayList<>();
+        hashes.add(hash);
+
+        while (!hashes.isEmpty()) {
+            synchronized (cache) {
+                byte[] myHash = hashes.remove(0);
+                Value node = this.getCache().get(myHash);
+                if (node == null) {
+                    throw new RuntimeException("Not found: " + Hex.toHexString(myHash));
+                }
+
+                if (node.isList()) {
+                    List<Object> siblings = node.asList();
+                    if (siblings.size() == PAIR_SIZE) {
+                        Value val = new Value(siblings.get(1));
+                        if (val.isHashCode() && !hasTerminator((byte[]) siblings.get(0))) {
+                            // scanTree(val.asBytes(), scanAction);
+                            hashes.add(val.asBytes());
+                        }
+                    } else {
+                        for (int j = 0; j < LIST_SIZE; ++j) {
+                            Value val = new Value(siblings.get(j));
+                            if (val.isHashCode()) {
+                                // scanTree(val.asBytes(), scanAction);
+                                hashes.add(val.asBytes());
+                            }
+                        }
+                    }
+                    scanAction.doOnNode(myHash, node);
+                }
+            }
+        }
+    }
+
+    public void scanTreeDiffLoop(byte[] hash, ScanAction scanAction, IByteArrayKeyValueDatabase db) {
+
+        ArrayList<byte[]> hashes = new ArrayList<>();
+        hashes.add(hash);
+
+        while (!hashes.isEmpty()) {
+            synchronized (cache) {
+                byte[] myHash = hashes.remove(0);
+                Value node = this.getCache().get(myHash);
+                if (node == null) {
+                    throw new RuntimeException("Not found: " + Hex.toHexString(myHash));
+                }
+
+                if (node.isList()) {
+                    List<Object> siblings = node.asList();
+                    if (siblings.size() == PAIR_SIZE) {
+                        Value val = new Value(siblings.get(1));
+                        if (val.isHashCode() && !hasTerminator((byte[]) siblings.get(0))) {
+                            // scanTree(val.asBytes(), scanAction);
+                            byte[] valBytes = val.asBytes();
+                            if (!db.get(valBytes).isPresent()) {
+                                hashes.add(valBytes);
+                            }
+                        }
+                    } else {
+                        for (int j = 0; j < LIST_SIZE; ++j) {
+                            Value val = new Value(siblings.get(j));
+                            if (val.isHashCode()) {
+                                // scanTree(val.asBytes(), scanAction);
+                                byte[] valBytes = val.asBytes();
+                                if (!db.get(valBytes).isPresent()) {
+                                    hashes.add(valBytes);
+                                }
+                            }
+                        }
+                    }
+                    scanAction.doOnNode(myHash, node);
+                }
+            }
+        }
+    }
+
     public void deserialize(byte[] data) {
         synchronized (cache) {
             RLPList rlpList = (RLPList) RLP.decode2(data).get(0);
@@ -769,10 +847,12 @@ public class TrieImpl implements Trie {
             Value value = new Value(stateRoot);
 
             if (value.isHashCode()) {
-                scanTree(stateRoot, traceAction);
+                scanTreeLoop(stateRoot, traceAction);
             } else {
                 traceAction.doOnNode(stateRoot, value);
             }
+
+            System.out.println("Total number of nodes added: " + traceAction.count);
         }
     }
 
@@ -784,10 +864,11 @@ public class TrieImpl implements Trie {
             Value value = new Value(stateRoot);
 
             if (value.isHashCode() && !db.get(value.asBytes()).isPresent()) {
-                scanTree(stateRoot, traceAction);
+                scanTreeDiffLoop(stateRoot, traceAction, db);
             } else {
                 traceAction.doOnNode(stateRoot, value);
             }
+            System.out.println("Total number of nodes added: " + traceAction.count);
         }
     }
 
