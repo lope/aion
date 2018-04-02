@@ -152,7 +152,7 @@ public class RecoveryUtils {
         return (nbBestBlock == nbBlock) ? Status.SUCCESS : Status.FAILURE;
     }
 
-    public static void archiveState(int numberOfBlocks) {
+    public static void archiveState(int blockNumber) {
         // ensure mining is disabled
         CfgAion cfg = CfgAion.inst();
         cfg.dbFromXML();
@@ -170,9 +170,12 @@ public class RecoveryUtils {
 
         long topBlock = store.getMaxNumber();
         Set<ByteArrayWrapper> usefulKeys = new HashSet<>();
-        long targetBlock = topBlock - numberOfBlocks;
+        long targetBlock = blockNumber;
         if (targetBlock < 0) {
             targetBlock = 0;
+        }
+        if (targetBlock > topBlock) {
+            targetBlock = topBlock - 1;
         }
 
         System.out.println("Creating swap database.");
@@ -208,7 +211,7 @@ public class RecoveryUtils {
         System.out.println("Getting full state for " + targetBlock);
         AionBlock block = store.getChainBlockByNumber(targetBlock);
         byte[] stateRoot = block.getStateRoot();
-        repository.getWorldState().saveDiffStateToDatabase(stateRoot, swapDB);
+        repository.getWorldState().saveFullStateToDatabase(stateRoot, swapDB);
 
         while (topBlock > targetBlock) {
             targetBlock++;
