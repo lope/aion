@@ -195,7 +195,12 @@ public abstract class AbstractDB implements IByteArrayKeyValueDatabase {
      */
     protected abstract byte[] getInternal(byte[] k);
 
-    public void deleteAllExcept(IByteArrayKeyValueStore _to_db) {
-        // TODO
+    public long deleteAllExcept(IByteArrayKeyValueStore _to_db) {
+        return 0L;
+    }
+
+    @Override
+    public long deleteAll() {
+        return 0L;
     }
 }

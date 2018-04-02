@@ -482,8 +482,9 @@ public class DatabaseWithCache implements IByteArrayKeyValueDatabase {
     }
 
     @Override
-    public void deleteAll() {
+    public long deleteAll() {
         // TODO
+        return 0L;
     }
 
     /**
@@ -506,7 +507,8 @@ public class DatabaseWithCache implements IByteArrayKeyValueDatabase {
     }
 
     @Override
-    public void deleteAllExcept(IByteArrayKeyValueStore db) {
-
+    public long deleteAllExcept(IByteArrayKeyValueStore db) {
+        // TODO
+        return 0L;
     }
 }

@@ -301,6 +301,8 @@ public class LevelDB extends AbstractDB {
 
         check();
 
+        LOG.info("Deleting all batch of " + keys.size() + " keys.");
+
         try (WriteBatch batch = db.createWriteBatch()) {
             // add delete operations to batch
             for (byte[] k : keys) {
@@ -317,20 +319,24 @@ public class LevelDB extends AbstractDB {
     }
 
     @Override
-    public void deleteAll() {
+    public long deleteAll() {
         check();
 
         LOG.info("Deleting all keys.");
+        long count = 0;
 
         try (DBIterator itr = db.iterator()) {
             // extract keys
             itr.seekToFirst();
-            while (itr.hasNext()) {
+            while (itr.hasNext() && count < LIMIT) {
                 db.delete(itr.next().getKey());
+                count++;
             }
         } catch (Exception e) {
             LOG.error("Unable to extract keys from database " + this.toString() + ".", e);
         }
+
+        return count;
     }
 
     // AbstractDB functionality ----------------------------------------------------------------------------------------
@@ -365,22 +371,27 @@ public class LevelDB extends AbstractDB {
 
     }
 
+    long LIMIT = 100000;
+
     @Override
-    public void deleteAllExcept(IByteArrayKeyValueStore edb) {
+    public long deleteAllExcept(IByteArrayKeyValueStore edb) {
         LOG.info("Deleting all keys from " + this.toString() + " that are not in " + edb.toString());
+        long count = 0;
 
         try (DBIterator itr = db.iterator()) {
             // extract keys
             itr.seekToFirst();
-            while (itr.hasNext()) {
+            while (itr.hasNext() && count < LIMIT) {
                 byte[] key = itr.next().getKey();
                 if (!edb.get(key).isPresent()) {
                     db.delete(key);
+                    count++;
                 }
             }
         } catch (Exception e) {
             LOG.error("Unable to extract keys from database " + this.toString() + ".", e);
         }
 
+        return count;
     }
 }

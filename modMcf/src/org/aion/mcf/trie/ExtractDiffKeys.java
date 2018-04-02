@@ -32,8 +32,38 @@
  *     Zcash project team.
  *     Bitcoinj team.
  ******************************************************************************/
-package org.aion.base.db;
+package org.aion.mcf.trie;
 
-public interface IByteArrayKeyValueStore extends IKeyValueStore<byte[], byte[]> {
-    long deleteAllExcept(IByteArrayKeyValueStore db);
+import org.aion.base.db.IByteArrayKeyValueDatabase;
+import org.aion.rlp.Value;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author Alexandra Roatis
+ */
+public class ExtractDiffKeys implements TrieImpl.ScanAction {
+
+    IByteArrayKeyValueDatabase db;
+    // Set<ByteArrayWrapper> output = new HashSet<>();
+    List<byte[]> output = new ArrayList<>();
+
+    public ExtractDiffKeys(IByteArrayKeyValueDatabase _db) {
+        this.db = _db;
+    }
+
+    @Override
+    public void doOnNode(byte[] hash, Value node) {
+        // output.add(ByteArrayWrapper.wrap(hash));
+        output.add(hash);
+    }
+
+    public List<byte[]> getOutput() {
+        return output;
+    }
+
+    //    public Set<ByteArrayWrapper> getOutput() {
+    //        return output;
+    //    }
 }

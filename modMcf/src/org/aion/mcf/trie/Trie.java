@@ -102,6 +102,7 @@ public interface Trie {
 
     void saveFullStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db);
     void saveDiffStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db);
+    void deleteDiffStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db);
 
     void pruneAllExcept(IByteArrayKeyValueDatabase db);
 }

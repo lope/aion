@@ -149,10 +149,6 @@ public class MockDB extends AbstractDB {
         }
     }
 
-    @Override
-    public void deleteAll() {
-        // TODO
-    }
 
     // AbstractDB functionality ----------------------------------------------------------------------------------------
 

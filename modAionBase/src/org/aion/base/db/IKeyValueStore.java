@@ -171,5 +171,5 @@ public interface IKeyValueStore<K, V> extends AutoCloseable {
      */
     void deleteBatch(Collection<K> keys);
 
-    void deleteAll();
+    long deleteAll();
 }

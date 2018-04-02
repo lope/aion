@@ -645,33 +645,33 @@ public class TrieImpl implements Trie {
                 byte[] myHash = hashes.remove(0);
                 Value node = this.getCache().get(myHash);
                 if (node == null) {
-                    throw new RuntimeException("Not found: " + Hex.toHexString(myHash));
-                }
-
-                if (node.isList()) {
-                    List<Object> siblings = node.asList();
-                    if (siblings.size() == PAIR_SIZE) {
-                        Value val = new Value(siblings.get(1));
-                        if (val.isHashCode() && !hasTerminator((byte[]) siblings.get(0))) {
-                            // scanTree(val.asBytes(), scanAction);
-                            byte[] valBytes = val.asBytes();
-                            if (!db.get(valBytes).isPresent()) {
-                                hashes.add(valBytes);
-                            }
-                        }
-                    } else {
-                        for (int j = 0; j < LIST_SIZE; ++j) {
-                            Value val = new Value(siblings.get(j));
-                            if (val.isHashCode()) {
+                    System.out.println("Skipped key. Not found: " + Hex.toHexString(myHash));
+                } else {
+                    if (node.isList()) {
+                        List<Object> siblings = node.asList();
+                        if (siblings.size() == PAIR_SIZE) {
+                            Value val = new Value(siblings.get(1));
+                            if (val.isHashCode() && !hasTerminator((byte[]) siblings.get(0))) {
                                 // scanTree(val.asBytes(), scanAction);
                                 byte[] valBytes = val.asBytes();
                                 if (!db.get(valBytes).isPresent()) {
                                     hashes.add(valBytes);
                                 }
                             }
+                        } else {
+                            for (int j = 0; j < LIST_SIZE; ++j) {
+                                Value val = new Value(siblings.get(j));
+                                if (val.isHashCode()) {
+                                    // scanTree(val.asBytes(), scanAction);
+                                    byte[] valBytes = val.asBytes();
+                                    if (!db.get(valBytes).isPresent()) {
+                                        hashes.add(valBytes);
+                                    }
+                                }
+                            }
                         }
+                        scanAction.doOnNode(myHash, node);
                     }
-                    scanAction.doOnNode(myHash, node);
                 }
             }
         }
@@ -868,18 +868,49 @@ public class TrieImpl implements Trie {
             } else {
                 traceAction.doOnNode(stateRoot, value);
             }
+
             System.out.println("Total number of nodes added: " + traceAction.count);
+        }
+    }
+
+    @Override
+    public void deleteDiffStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db) {
+
+        synchronized (cache) {
+            ExtractDiffKeys traceAction = new ExtractDiffKeys(db);
+            Value value = new Value(stateRoot);
+
+            if (value.isHashCode() && !db.get(value.asBytes()).isPresent()) {
+                scanTreeDiffLoop(stateRoot, traceAction, db);
+            } else {
+                traceAction.doOnNode(stateRoot, value);
+            }
+
+            cache.getDb().deleteBatch(traceAction.getOutput());
         }
     }
 
     @Override
     public void pruneAllExcept(IByteArrayKeyValueDatabase db) {
         synchronized (cache) {
-            // delete everything from database
-            cache.getDb().deleteAllExcept(db);
+            //            // delete everything from database
+            //            long deleted = cache.getDb().deleteAllExcept(db);
+            //            System.out.println("Deleted key #" + deleted + " from " + cache.getDb().toString());
+            //
+            //            while (deleted > 0) {
+            //                deleted = cache.getDb().deleteAllExcept(db);
+            //                System.out.println("Deleted key #" + deleted + " from " + cache.getDb().toString());
+            //            }
 
             // clean swap database
-            db.deleteAll();
+            long deleted = db.deleteAll();
+            System.out.println("Deleted key #" + deleted + " from " + db.toString());
+
+            while (deleted > 0) {
+                deleted = db.deleteAll();
+                System.out.println("Deleted key #" + deleted + " from " + db.toString());
+            }
+
         }
     }
 

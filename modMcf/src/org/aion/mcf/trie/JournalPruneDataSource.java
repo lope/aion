@@ -41,8 +41,9 @@ public class JournalPruneDataSource<BLK extends IBlock<?, ?>, BH extends IBlockH
         implements IByteArrayKeyValueStore {
 
     @Override
-    public void deleteAllExcept(IByteArrayKeyValueStore db) {
-
+    public long deleteAllExcept(IByteArrayKeyValueStore db) {
+        // TODO
+        return 0L;
     }
 
     private class Updates {
@@ -243,8 +244,9 @@ public class JournalPruneDataSource<BLK extends IBlock<?, ?>, BH extends IBlockH
     }
 
     @Override
-    public void deleteAll() {
+    public long deleteAll() {
         // TODO
+        return 0L;
     }
 
     @Override

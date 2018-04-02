@@ -34,7 +34,6 @@
  ******************************************************************************/
 package org.aion.db.impl.h2;
 
-import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.db.impl.AbstractDB;
 import org.h2.mvstore.FileStore;
@@ -323,11 +322,6 @@ public class H2MVMap extends AbstractDB {
         } catch (Exception e) {
             LOG.error("Unable to execute batch delete operation on " + this.toString() + ".", e);
         }
-    }
-
-    @Override
-    public void deleteAll() {
-        // TODO
     }
 
     // AbstractDB functionality ----------------------------------------------------------------------------------------

@@ -104,8 +104,9 @@ public class XorDataSource implements IByteArrayKeyValueStore {
     }
 
     @Override
-    public void deleteAll() {
+    public long deleteAll() {
         // TODO
+        return 0L;
     }
 
     @Override
@@ -115,7 +116,8 @@ public class XorDataSource implements IByteArrayKeyValueStore {
     }
 
     @Override
-    public void deleteAllExcept(IByteArrayKeyValueStore db) {
-
+    public long deleteAllExcept(IByteArrayKeyValueStore db) {
+        // TODO
+        return 0L;
     }
 }
