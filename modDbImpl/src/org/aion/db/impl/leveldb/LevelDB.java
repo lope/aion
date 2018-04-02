@@ -324,8 +324,9 @@ public class LevelDB extends AbstractDB {
 
         try (DBIterator itr = db.iterator()) {
             // extract keys
-            for (itr.seekToFirst(); itr.hasNext(); itr.next()) {
-                db.delete(itr.peekNext().getKey());
+            itr.seekToFirst();
+            while (itr.hasNext()) {
+                db.delete(itr.next().getKey());
             }
         } catch (Exception e) {
             LOG.error("Unable to extract keys from database " + this.toString() + ".", e);
@@ -370,8 +371,9 @@ public class LevelDB extends AbstractDB {
 
         try (DBIterator itr = db.iterator()) {
             // extract keys
-            for (itr.seekToFirst(); itr.hasNext(); itr.next()) {
-                byte[] key = itr.peekNext().getKey();
+            itr.seekToFirst();
+            while (itr.hasNext()) {
+                byte[] key = itr.next().getKey();
                 if (!edb.get(key).isPresent()) {
                     db.delete(key);
                 }
