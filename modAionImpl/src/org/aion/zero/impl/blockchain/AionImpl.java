@@ -43,6 +43,7 @@ import org.aion.zero.impl.AionHub;
 import org.aion.zero.impl.config.CfgAion;
 import org.aion.zero.impl.tx.A0TxTask;
 import org.aion.zero.impl.tx.TxBroadcaster;
+import org.aion.zero.impl.tx.TxCollector;
 import org.aion.zero.impl.types.AionBlock;
 import org.aion.zero.types.A0BlockHeader;
 import org.aion.zero.types.AionTransaction;
@@ -64,16 +65,8 @@ public class AionImpl implements IAionChain {
 
     static private AionImpl inst;
 
-    private Timer timer;
+    private TxCollector collector;
 
-    private List<AionTransaction> broadCastBuffer = new ArrayList<>();
-
-    class TxBroadCastTask extends TimerTask {
-        @Override
-        public void run() {
-            broadCastTxs();
-        }
-    }
 
     public static AionImpl inst() {
         if (inst == null) {
@@ -88,21 +81,9 @@ public class AionImpl implements IAionChain {
         LOG_GEN.info("<node-started endpoint=p2p://" + cfg.getId() + "@" + cfg.getNet().getP2p().getIp() + ":"
                 + cfg.getNet().getP2p().getPort() + ">");
 
-        timer = new Timer("TxBC");
-        timer.schedule(new TxBroadCastTask(), 5000, 100);
+        collector = new TxCollector(this.aionHub.getP2pMgr());
     }
 
-    private void broadCastTxs() {
-        synchronized (broadCastBuffer) {
-            if (LOG_TX.isTraceEnabled()) {
-                LOG_TX.trace("bcTxTask {}", broadCastBuffer.size());
-            }
-
-            A0TxTask txTask = new A0TxTask(broadCastBuffer, this.aionHub.getP2pMgr());
-            TxBroadcaster.getInstance().submitTransaction(txTask);
-            broadCastBuffer.clear();
-        }
-    }
 
     @Override
     public IPowChain<AionBlock, A0BlockHeader> getBlockchain() {
@@ -133,10 +114,6 @@ public class AionImpl implements IAionChain {
 
     @Override
     public void close() {
-
-        if (timer != null) {
-            timer.cancel();
-        }
         aionHub.close();
     }
 
@@ -154,18 +131,15 @@ public class AionImpl implements IAionChain {
     @SuppressWarnings("unchecked")
     @Override
     public void broadcastTransaction(AionTransaction transaction) {
-        broadcastTransactions(Collections.singletonList(transaction));
+        transaction.getEncoded();
+        collector.submitTx(transaction);
     }
 
     public void broadcastTransactions(List<AionTransaction> transaction) {
-
-        if (LOG_TX.isTraceEnabled()) {
-            LOG_TX.trace("broadcastTxs {}", transaction.size());
+        for(AionTransaction tx : transaction) {
+            tx.getEncoded();
         }
-
-        synchronized (broadCastBuffer) {
-            this.broadCastBuffer.addAll(transaction);
-        }
+        collector.submitTx(transaction);
     }
 
     public long estimateTxNrg(AionTransaction tx, IAionBlock block) {
