@@ -893,17 +893,17 @@ public class TrieImpl implements Trie {
     @Override
     public void pruneAllExcept(IByteArrayKeyValueDatabase db) {
         synchronized (cache) {
-            //            // delete everything from database
-            //            long deleted = cache.getDb().deleteAllExcept(db);
-            //            System.out.println("Deleted key #" + deleted + " from " + cache.getDb().toString());
-            //
-            //            while (deleted > 0) {
-            //                deleted = cache.getDb().deleteAllExcept(db);
-            //                System.out.println("Deleted key #" + deleted + " from " + cache.getDb().toString());
-            //            }
+            // delete everything from database
+            long deleted = cache.getDb().deleteAllExcept(db);
+            System.out.println("Deleted key #" + deleted + " from " + cache.getDb().toString());
+
+            while (deleted > 0) {
+                deleted = cache.getDb().deleteAllExcept(db);
+                System.out.println("Deleted key #" + deleted + " from " + cache.getDb().toString());
+            }
 
             // clean swap database
-            long deleted = db.deleteAll();
+            deleted = db.deleteAll();
             System.out.println("Deleted key #" + deleted + " from " + db.toString());
 
             while (deleted > 0) {

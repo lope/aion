@@ -221,15 +221,15 @@ public class RecoveryUtils {
             repository.getWorldState().saveDiffStateToDatabase(stateRoot, swapDB);
         }
 
-        topBlock = blockNumber - 1;
-        targetBlock = 1;
-        while (targetBlock <= topBlock) {
-            System.out.println("Deleting diff state for " + targetBlock);
-            block = store.getChainBlockByNumber(targetBlock);
-            stateRoot = block.getStateRoot();
-            repository.getWorldState().deleteDiffStateToDatabase(stateRoot, swapDB);
-            targetBlock++;
-        }
+//        topBlock = blockNumber - 1;
+//        targetBlock = 1;
+//        while (targetBlock <= topBlock) {
+//            System.out.println("Deleting diff state for " + targetBlock);
+//            block = store.getChainBlockByNumber(targetBlock);
+//            stateRoot = block.getStateRoot();
+//            repository.getWorldState().deleteDiffStateToDatabase(stateRoot, swapDB);
+//            targetBlock++;
+//        }
 
         repository.getWorldState().pruneAllExcept(swapDB);
         swapDB.close();
