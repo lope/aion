@@ -620,6 +620,8 @@ public final class P2pMgr implements IP2pMgr {
         if (node != null) {
             SocketChannel channel = node.getChannel();
             if (channel.isOpen()) {
+                if (showLog)
+                    System.out.println("sending: " + _msg.getClass().getSimpleName() + " to " + channel);
                 this.workers.submit(
                         new TaskWrite(ioLoop, workers, showLog, node.getIdShort(), node.getChannel(), _msg));
             }
@@ -705,41 +707,12 @@ public final class P2pMgr implements IP2pMgr {
                 if (key.isAcceptable())
                     throw new UnsupportedOperationException("HandleChannel does not support acceptable keys");
 
-                long startTime = 0, endTime = 0, readEndTime = 0, writeStartTime = 0, writeEndTime = 0;
-
-                if (showLog)
-                    startTime = System.nanoTime();
-
                 if (key.isReadable()) {
                     P2pMgr.this.read(key);
-
-                    if (showLog)
-                        readEndTime = System.nanoTime();
                 }
 
                 if (key.isWritable()) {
-
-                    if (showLog)
-                        writeStartTime = System.nanoTime();
-
                     write(channel, key);
-
-                    if (showLog)
-                        writeEndTime = System.nanoTime();
-                }
-
-                if (showLog) {
-                    endTime = System.nanoTime();
-                    // if greater than 1s, something is wrong
-                    if (endTime - startTime > 1000000000) {
-                        System.out.println("channel: "
-                                + channel
-                                + " key-warning total: "
-                                + (endTime - startTime)
-                                + "ns read: " + (readEndTime - startTime)
-                                + "ns write: " + (writeEndTime - writeStartTime) + "ns");
-                        System.out.println("key-stats bb_size: " + byteBuffers.size());
-                    }
                 }
             } catch (IOException e) {
                 if (showLog) {
@@ -769,7 +742,7 @@ public final class P2pMgr implements IP2pMgr {
                     while (buf != null && buf.hasRemaining()) {
                         ret = chan.write(buf);
                         if (ret <= 0) {
-                            break;
+                            break LOOP;
                         }
                     }
 
