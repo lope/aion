@@ -71,6 +71,7 @@ public final class BroadcastTxHandler extends Handler {
 
     @Override
     public final void receive(int _nodeIdHashcode, String _displayId, final byte[] _msgBytes) {
+        /*
         if (_msgBytes == null || _msgBytes.length == 0)
             return;
 
@@ -88,6 +89,7 @@ public final class BroadcastTxHandler extends Handler {
             return;
         }
         pendingState.addPendingTransactions(castRawTx(broadCastTx));
+        */
     }
 
     private List<AionTransaction> castRawTx(List<byte[]> broadCastTx) {

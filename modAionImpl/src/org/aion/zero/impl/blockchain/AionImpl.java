@@ -131,15 +131,19 @@ public class AionImpl implements IAionChain {
     @SuppressWarnings("unchecked")
     @Override
     public void broadcastTransaction(AionTransaction transaction) {
+        /*
         transaction.getEncoded();
         collector.submitTx(transaction);
+        */
     }
 
     public void broadcastTransactions(List<AionTransaction> transaction) {
+        /*
         for(AionTransaction tx : transaction) {
             tx.getEncoded();
         }
         collector.submitTx(transaction);
+        */
     }
 
     public long estimateTxNrg(AionTransaction tx, IAionBlock block) {

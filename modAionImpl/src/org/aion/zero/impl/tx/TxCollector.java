@@ -58,6 +58,7 @@ public class TxCollector {
     * Submit a batch list of tx
      */
     public void submitTx(List<AionTransaction> txs) {
+        /*
         // addAll potentially dangerous for blocking queue, add manually
         for(AionTransaction tx : txs) {
             try {
@@ -69,12 +70,14 @@ public class TxCollector {
                 // Interrupted, no problem
             }
         }
+        */
     }
 
     /*
      * Submit a single Tx
      */
     public void submitTx(AionTransaction tx) {
+        /*
         try {
             transactionQueue.offer(tx, offerTimeout, TimeUnit.MILLISECONDS);
             if (queueSizeBytes.addAndGet(tx.getEncoded().length) >= this.maxTxBufferSize)
@@ -83,10 +86,11 @@ public class TxCollector {
         } catch (InterruptedException e) {
             // Interrupted, no problem
         }
+        */
     }
 
     private void broadcastTx() {
-
+        /*
         List<AionTransaction> transactions;
         broadcastLock.lock();
         try {
@@ -111,16 +115,19 @@ public class TxCollector {
         this.lastBroadcast.set(System.currentTimeMillis());
 
         TxBroadcaster.getInstance().submitTransaction(new A0TxTask(transactions, this.p2p));
+        */
     }
 
     /*
     Run periodically by scheduled executor to ensure tasks will be sent out in timely fashion
      */
     private void broadcastTransactionsTask() {
+        /*
         int maxDelay = 1000;
         if(System.currentTimeMillis() - this.lastBroadcast.get() < maxDelay)
             return;
 
         broadcastTx();
+        */
     }
 }
