@@ -100,6 +100,7 @@ public interface Trie {
 
     boolean validate();
 
+    int printFullStateSize(byte[] stateRoot);
     void saveFullStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db);
     void saveDiffStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db);
     void deleteDiffStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db);

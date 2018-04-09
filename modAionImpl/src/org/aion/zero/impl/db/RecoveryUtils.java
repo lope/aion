@@ -221,19 +221,58 @@ public class RecoveryUtils {
             repository.getWorldState().saveDiffStateToDatabase(stateRoot, swapDB);
         }
 
-//        topBlock = blockNumber - 1;
-//        targetBlock = 1;
-//        while (targetBlock <= topBlock) {
-//            System.out.println("Deleting diff state for " + targetBlock);
-//            block = store.getChainBlockByNumber(targetBlock);
-//            stateRoot = block.getStateRoot();
-//            repository.getWorldState().deleteDiffStateToDatabase(stateRoot, swapDB);
-//            targetBlock++;
-//        }
+        //        topBlock = blockNumber - 1;
+        //        targetBlock = 1;
+        //        while (targetBlock <= topBlock) {
+        //            System.out.println("Deleting diff state for " + targetBlock);
+        //            block = store.getChainBlockByNumber(targetBlock);
+        //            stateRoot = block.getStateRoot();
+        //            repository.getWorldState().deleteDiffStateToDatabase(stateRoot, swapDB);
+        //            targetBlock++;
+        //        }
 
         repository.getWorldState().pruneAllExcept(swapDB);
         swapDB.close();
         repository.close();
     }
 
+    public static void getStateSize(int blockNumber) {
+        // ensure mining is disabled
+        CfgAion cfg = CfgAion.inst();
+        cfg.dbFromXML();
+        cfg.getConsensus().setMining(false);
+
+        Map<String, String> cfgLog = new HashMap<>();
+        cfgLog.put("DB", "INFO");
+
+        AionLoggerFactory.init(cfgLog);
+
+        // get the current blockchain
+        AionRepositoryImpl repository = AionRepositoryImpl.inst();
+
+        AionBlockStore store = repository.getBlockStore();
+
+        long topBlock = store.getMaxNumber();
+        Set<ByteArrayWrapper> usefulKeys = new HashSet<>();
+        long targetBlock = blockNumber;
+        if (targetBlock < 0) {
+            targetBlock = 0;
+        }
+        if (targetBlock > topBlock) {
+            targetBlock = topBlock - 1;
+        }
+
+        AionBlock block;
+        byte[] stateRoot;
+
+        while (targetBlock <= topBlock) {
+            block = store.getChainBlockByNumber(targetBlock);
+            stateRoot = block.getStateRoot();
+            System.out.println("Block number = " + targetBlock + ", tx count = " + block.getTransactionsList().size()
+                    + ", state trie kv count = " + repository.getWorldState().printFullStateSize(stateRoot));
+            targetBlock++;
+        }
+
+        repository.close();
+    }
 }

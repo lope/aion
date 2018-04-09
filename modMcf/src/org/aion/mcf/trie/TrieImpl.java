@@ -857,6 +857,23 @@ public class TrieImpl implements Trie {
     }
 
     @Override
+    public int printFullStateSize(byte[] stateRoot) {
+
+        synchronized (cache) {
+            CountKeys traceAction = new CountKeys();
+            Value value = new Value(stateRoot);
+
+            if (value.isHashCode()) {
+                scanTreeLoop(stateRoot, traceAction);
+            } else {
+                traceAction.doOnNode(stateRoot, value);
+            }
+
+           return traceAction.count;
+        }
+    }
+
+    @Override
     public void saveDiffStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db) {
 
         synchronized (cache) {

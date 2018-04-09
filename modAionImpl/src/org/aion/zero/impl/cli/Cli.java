@@ -135,6 +135,11 @@ public class Cli {
                     RecoveryUtils.archiveState(Integer.parseInt(args[1]));
                     System.out.println("Finished pruning state.");
                     break;
+                case "--trie-size":
+                    System.out.println("Checking state ....");
+                    RecoveryUtils.getStateSize(Integer.parseInt(args[1]));
+                    System.out.println("Finished checking state.");
+                    break;
                 case "-v":
                     System.out.println("\nVersion");
                     System.out.println("--------------------------------------------");
