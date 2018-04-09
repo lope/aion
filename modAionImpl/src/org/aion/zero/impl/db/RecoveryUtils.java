@@ -275,4 +275,28 @@ public class RecoveryUtils {
 
         repository.close();
     }
+
+    public static void printTrieState(int blockNumber) {
+        // ensure mining is disabled
+        CfgAion cfg = CfgAion.inst();
+        cfg.dbFromXML();
+        cfg.getConsensus().setMining(false);
+
+        Map<String, String> cfgLog = new HashMap<>();
+        cfgLog.put("DB", "INFO");
+
+        AionLoggerFactory.init(cfgLog);
+
+        // get the current blockchain
+        AionRepositoryImpl repository = AionRepositoryImpl.inst();
+
+        AionBlockStore store = repository.getBlockStore();
+
+        AionBlock block = store.getChainBlockByNumber(blockNumber);
+        byte[] stateRoot = block.getStateRoot();
+        System.out.println("Block number = " + blockNumber + ", tx count = " + block.getTransactionsList().size() + "\n"
+                + repository.getWorldState().printFullState(stateRoot));
+
+        repository.close();
+    }
 }

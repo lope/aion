@@ -140,6 +140,11 @@ public class Cli {
                     RecoveryUtils.getStateSize(Integer.parseInt(args[1]));
                     System.out.println("Finished checking state.");
                     break;
+                case "--print-trie":
+                    System.out.println("Checking state ....");
+                    RecoveryUtils.printTrieState(Integer.parseInt(args[1]));
+                    System.out.println("Finished checking state.");
+                    break;
                 case "-v":
                     System.out.println("\nVersion");
                     System.out.println("--------------------------------------------");

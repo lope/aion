@@ -873,6 +873,22 @@ public class TrieImpl implements Trie {
         }
     }
 
+    public String printFullState(byte[] stateRoot) {
+
+        synchronized (cache) {
+            TraceAllNodes traceAction = new TraceAllNodes();
+            Value value = new Value(stateRoot);
+            if (value.isHashCode()) {
+                this.scanTreeLoop(stateRoot, traceAction);
+            } else {
+                traceAction.doOnNode(stateRoot, value);
+            }
+
+            return "root: " + Hex.toHexString(stateRoot) + "\n" + traceAction.getOutput();
+        }
+    }
+
+
     @Override
     public void saveDiffStateToDatabase(byte[] stateRoot, IByteArrayKeyValueDatabase db) {
 
