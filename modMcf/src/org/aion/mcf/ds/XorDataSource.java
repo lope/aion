@@ -104,12 +104,6 @@ public class XorDataSource implements IByteArrayKeyValueStore {
     }
 
     @Override
-    public long deleteAll() {
-        // TODO
-        return 0L;
-    }
-
-    @Override
     public boolean isEmpty() {
         // TODO Auto-generated method stub
         return false;

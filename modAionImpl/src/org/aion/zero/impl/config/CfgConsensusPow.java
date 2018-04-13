@@ -49,12 +49,15 @@ public final class CfgConsensusPow extends CfgConsensus {
     CfgConsensusPow() {
         this.mining = true;
         this.minerAddress = Address.ZERO_ADDRESS().toString();
-        this.cpuMineThreads = (byte) (Runtime.getRuntime().availableProcessors() >> 1);
+        this.cpuMineThreads = (byte) (Runtime.getRuntime().availableProcessors() >> 1); // half the available processors
         this.extraData = "AION";
         this.cfgEnergyStrategy = new CfgEnergyStrategy();
+        this.seed = false;
     }
 
     private boolean mining;
+
+    private boolean seed;
 
     private String minerAddress;
 
@@ -72,6 +75,9 @@ public final class CfgConsensusPow extends CfgConsensus {
                         case "mining":
                             this.mining = Boolean.parseBoolean(Cfg.readValue(sr));
                             break;
+                        case "seed":
+                            this.seed = Boolean.parseBoolean(Cfg.readValue(sr));
+                                break;
                         case "miner-address":
                             this.minerAddress = Cfg.readValue(sr);
                             break;
@@ -173,5 +179,9 @@ public final class CfgConsensusPow extends CfgConsensus {
 
     public CfgEnergyStrategy getEnergyStrategy() {
         return this.cfgEnergyStrategy;
+    }
+
+    public boolean isSeed() {
+        return seed;
     }
 }

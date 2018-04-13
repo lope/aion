@@ -936,14 +936,7 @@ public class TrieImpl implements Trie {
             }
 
             // clean swap database
-            deleted = db.deleteAll();
-            System.out.println("Deleted key #" + deleted + " from " + db.toString());
-
-            while (deleted > 0) {
-                deleted = db.deleteAll();
-                System.out.println("Deleted key #" + deleted + " from " + db.toString());
-            }
-
+            db.drop();
         }
     }
 

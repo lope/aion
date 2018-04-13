@@ -32,12 +32,15 @@ import org.aion.zero.impl.AionBlockchainImpl;
 import org.aion.zero.impl.config.CfgAion;
 import org.aion.zero.impl.types.AionBlock;
 
+import java.io.IOException;
 import java.util.*;
 
 public class RecoveryUtils {
 
     public enum Status {
-        SUCCESS, FAILURE, ILLEGAL_ARGUMENT
+        SUCCESS,
+        FAILURE,
+        ILLEGAL_ARGUMENT
     }
 
     /**
@@ -98,16 +101,69 @@ public class RecoveryUtils {
         store.pruneAndCorrect();
         store.flush();
 
-        // compact database after the changes were applied
-        blockchain.getRepository().compact();
-
         blockchain.getRepository().close();
+    }
+
+    /**
+     * Used by the CLI call.
+     */
+    public static void dbCompact() {
+        // ensure mining is disabled
+        CfgAion cfg = CfgAion.inst();
+        cfg.dbFromXML();
+        cfg.getConsensus().setMining(false);
+
+        cfg.getDb().setHeapCacheEnabled(false);
+
+        Map<String, String> cfgLog = new HashMap<>();
+        cfgLog.put("DB", "INFO");
+        cfgLog.put("GEN", "INFO");
+
+        AionLoggerFactory.init(cfgLog);
+
+        // get the current blockchain
+        AionRepositoryImpl repository = AionRepositoryImpl.inst();
+
+        // compact database after the changes were applied
+        repository.compact();
+        repository.close();
+    }
+
+    /**
+     * Used by the CLI call.
+     */
+    public static void dumpBlocks(long count) {
+        // ensure mining is disabled
+        CfgAion cfg = CfgAion.inst();
+        cfg.dbFromXML();
+        cfg.getConsensus().setMining(false);
+
+        cfg.getDb().setHeapCacheEnabled(false);
+
+        Map<String, String> cfgLog = new HashMap<>();
+        cfgLog.put("DB", "INFO");
+        cfgLog.put("GEN", "INFO");
+
+        AionLoggerFactory.init(cfgLog);
+
+        // get the current blockchain
+        AionRepositoryImpl repository = AionRepositoryImpl.inst();
+
+        AionBlockStore store = repository.getBlockStore();
+        try {
+            store.dumpPastBlocks(count, cfg.getBasePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        repository.close();
     }
 
     /**
      * Used by internal world state recovery method.
      */
-    public static Status revertTo(AionBlockchainImpl blockchain, long nbBlock) {
+    public static Status revertTo(AionBlockchainImpl blockchain,
+                                  long nbBlock) {
         IBlockStoreBase store = blockchain.getBlockStore();
 
         IBlock bestBlock = store.getBestBlock();
@@ -137,8 +193,8 @@ public class RecoveryUtils {
         }
         if (nbBlock > nbBestBlock) {
             System.out.println("The block #" + nbBlock + " is greater than the current best block #" + nbBestBlock
-                    + " stored in the database. "
-                    + "Cannot move to that block without synchronizing with peers. Start Aion instance to sync.");
+                                       + " stored in the database. "
+                                       + "Cannot move to that block without synchronizing with peers. Start Aion instance to sync.");
             return Status.ILLEGAL_ARGUMENT;
         }
 
@@ -269,7 +325,8 @@ public class RecoveryUtils {
             block = store.getChainBlockByNumber(targetBlock);
             stateRoot = block.getStateRoot();
             System.out.println("Block number = " + targetBlock + ", tx count = " + block.getTransactionsList().size()
-                    + ", state trie kv count = " + repository.getWorldState().printFullStateSize(stateRoot));
+                                       + ", state trie kv count = " + repository.getWorldState()
+                    .printFullStateSize(stateRoot));
             targetBlock++;
         }
 
@@ -295,7 +352,7 @@ public class RecoveryUtils {
         AionBlock block = store.getChainBlockByNumber(blockNumber);
         byte[] stateRoot = block.getStateRoot();
         System.out.println("Block number = " + blockNumber + ", tx count = " + block.getTransactionsList().size() + "\n"
-                + repository.getWorldState().printFullState(stateRoot));
+                                   + repository.getWorldState().printFullState(stateRoot));
 
         repository.close();
     }

@@ -77,9 +77,18 @@ public class LevelDB extends AbstractDB {
      * <p>Note: the values set in this constructor are not optimal, only historical.</p>
      */
     @Deprecated
-    public LevelDB(String name, String path, boolean enableCache, boolean enableCompression) {
-        this(name, path, enableCache, enableCompression, LevelDBConstants.MAX_OPEN_FILES, LevelDBConstants.BLOCK_SIZE,
-                LevelDBConstants.WRITE_BUFFER_SIZE, LevelDBConstants.CACHE_SIZE);
+    public LevelDB(String name,
+                   String path,
+                   boolean enableCache,
+                   boolean enableCompression) {
+        this(name,
+             path,
+             enableCache,
+             enableCompression,
+             LevelDBConstants.MAX_OPEN_FILES,
+             LevelDBConstants.BLOCK_SIZE,
+             LevelDBConstants.WRITE_BUFFER_SIZE,
+             LevelDBConstants.CACHE_SIZE);
     }
 
     @Override
@@ -129,6 +138,10 @@ public class LevelDB extends AbstractDB {
             db = JniDBFactory.factory.open(f, options);
         } catch (Exception e1) {
             LOG.error("Failed to open the database " + this.toString() + " due to: ", e1);
+            if (e1.getMessage().contains("No space left on device")) {
+                LOG.error("Shutdown due to lack of disk space.");
+                System.exit(0);
+            }
 
             try {
                 // attempt repair
@@ -316,27 +329,6 @@ public class LevelDB extends AbstractDB {
         } catch (IOException e) {
             LOG.error("Unable to close WriteBatch object in " + this.toString() + ".", e);
         }
-    }
-
-    @Override
-    public long deleteAll() {
-        check();
-
-        LOG.info("Deleting all keys.");
-        long count = 0;
-
-        try (DBIterator itr = db.iterator()) {
-            // extract keys
-            itr.seekToFirst();
-            while (itr.hasNext() && count < LIMIT) {
-                db.delete(itr.next().getKey());
-                count++;
-            }
-        } catch (Exception e) {
-            LOG.error("Unable to extract keys from database " + this.toString() + ".", e);
-        }
-
-        return count;
     }
 
     // AbstractDB functionality ----------------------------------------------------------------------------------------

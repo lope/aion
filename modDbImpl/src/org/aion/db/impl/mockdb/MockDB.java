@@ -149,6 +149,10 @@ public class MockDB extends AbstractDB {
         }
     }
 
+    @Override
+    public void drop() {
+        kv.clear();
+    }
 
     // AbstractDB functionality ----------------------------------------------------------------------------------------
 

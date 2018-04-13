@@ -38,18 +38,31 @@ import java.io.Writer;
  */
 public final class CfgSync {
 
+    private int blocksBackwardMin;
     private int blocksBackwardMax;
-    private int blocksImportMax;
+
+    private int blocksRequestMax;
+    private int blocksResponseMax;
 
     private int blocksQueueMax;
 
     private boolean showStatus;
 
-    public CfgSync() {
-        this.blocksBackwardMax = 16;
-        this.blocksImportMax = 32;
+    private static int BLOCKS_BACKWARD_MIN = 8;
+    private static int BLOCKS_BACKWARD_MAX = 64;
+    private static int BLOCKS_REQUEST_MAX = 96;
+    private static int BLOCKS_RESPONSE_MAX = 96;
+    private static int BLOCKS_QUEUE_MAX = 48;
 
-        this.blocksQueueMax = 48;
+    public CfgSync() {
+        this.blocksBackwardMin = BLOCKS_BACKWARD_MIN;
+        this.blocksBackwardMax = BLOCKS_BACKWARD_MAX;
+
+        this.blocksRequestMax = BLOCKS_REQUEST_MAX;
+        this.blocksResponseMax = BLOCKS_RESPONSE_MAX;
+
+        this.blocksQueueMax = BLOCKS_QUEUE_MAX;
+
         this.showStatus = false;
     }
 
@@ -61,11 +74,17 @@ public final class CfgSync {
             case XMLStreamReader.START_ELEMENT:
                 String elementName = sr.getLocalName().toLowerCase();
                 switch (elementName) {
+                case "blocks-backward-min":
+                    this.blocksBackwardMin = Integer.parseInt(Cfg.readValue(sr));
+                    break;
                 case "blocks-backward-max":
                     this.blocksBackwardMax = Integer.parseInt(Cfg.readValue(sr));
                     break;
-                case "blocks-import-max":
-                    this.blocksImportMax = Integer.parseInt(Cfg.readValue(sr));
+                case "blocks-request-max":
+                    this.blocksRequestMax = Integer.parseInt(Cfg.readValue(sr));
+                    break;
+                case "blocks-response-max":
+                    this.blocksResponseMax = Integer.parseInt(Cfg.readValue(sr));
                     break;
                 case "blocks-queue-max":
                     this.blocksQueueMax = Integer.parseInt(Cfg.readValue(sr));
@@ -96,22 +115,34 @@ public final class CfgSync {
             xmlWriter.writeCharacters("\r\n\t");
             xmlWriter.writeStartElement("sync");
 
+            // sub-element blocks-backward-min
+            xmlWriter.writeCharacters("\r\n\t\t");
+            xmlWriter.writeStartElement("blocks-backward-min");
+            xmlWriter.writeCharacters(BLOCKS_BACKWARD_MIN + "");
+            xmlWriter.writeEndElement();
+
             // sub-element blocks-backward-max
             xmlWriter.writeCharacters("\r\n\t\t");
             xmlWriter.writeStartElement("blocks-backward-max");
-            xmlWriter.writeCharacters(this.getBlocksBackwardMax() + "");
+            xmlWriter.writeCharacters(BLOCKS_BACKWARD_MAX + "");
             xmlWriter.writeEndElement();
 
-            // sub-element blocks-import-max
+            // sub-element blocks-request-max
             xmlWriter.writeCharacters("\r\n\t\t");
-            xmlWriter.writeStartElement("blocks-import-max");
-            xmlWriter.writeCharacters(this.getBlocksImportMax() + "");
+            xmlWriter.writeStartElement("blocks-request-max");
+            xmlWriter.writeCharacters(BLOCKS_REQUEST_MAX + "");
+            xmlWriter.writeEndElement();
+
+            // sub-element blocks-response-max
+            xmlWriter.writeCharacters("\r\n\t\t");
+            xmlWriter.writeStartElement("blocks-response-max");
+            xmlWriter.writeCharacters(BLOCKS_RESPONSE_MAX + "");
             xmlWriter.writeEndElement();
 
             // sub-element blocks-queue-max
             xmlWriter.writeCharacters("\r\n\t\t");
             xmlWriter.writeStartElement("blocks-queue-max");
-            xmlWriter.writeCharacters(this.getBlocksQueueMax() + "");
+            xmlWriter.writeCharacters(BLOCKS_QUEUE_MAX + "");
             xmlWriter.writeEndElement();
 
             // sub-element show-status
@@ -135,12 +166,20 @@ public final class CfgSync {
         }
     }
 
+    public int getBlocksBackwardMin() {
+        return this.blocksBackwardMin;
+    }
+
     public int getBlocksBackwardMax() {
         return this.blocksBackwardMax;
     }
 
-    public int getBlocksImportMax() {
-        return this.blocksImportMax;
+    public int getBlocksRequestMax() {
+        return this.blocksRequestMax;
+    }
+
+    public int getBlocksResponseMax() {
+        return this.blocksResponseMax;
     }
 
     public int getBlocksQueueMax() {

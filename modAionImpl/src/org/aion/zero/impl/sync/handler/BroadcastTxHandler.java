@@ -35,6 +35,8 @@
 
 package org.aion.zero.impl.sync.handler;
 
+import org.aion.base.util.ByteArrayWrapper;
+import org.aion.base.util.ByteUtil;
 import org.aion.mcf.blockchain.IPendingStateInternal;
 import org.aion.p2p.Ctrl;
 import org.aion.p2p.Handler;
@@ -48,6 +50,9 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @author chris
@@ -61,11 +66,48 @@ public final class BroadcastTxHandler extends Handler {
 
     private final IP2pMgr p2pMgr;
 
-    public BroadcastTxHandler(final Logger _log, final IPendingStateInternal _pendingState, final IP2pMgr _p2pMgr) {
+    private final Timer timer;
+
+    private LinkedBlockingQueue<AionTransaction> txQueue;
+
+    private final boolean buffer;
+
+    public BroadcastTxHandler(final Logger _log, final IPendingStateInternal _pendingState, final IP2pMgr _p2pMgr, final boolean enableBuffer) {
         super(Ver.V0, Ctrl.SYNC, Act.BROADCAST_TX);
         this.log = _log;
         this.pendingState = _pendingState;
         this.p2pMgr = _p2pMgr;
+        this.txQueue = new LinkedBlockingQueue<>(50_000);
+        this.buffer = enableBuffer;
+
+        if (this.buffer) {
+            log.info("BufferTask buffer enable!");
+            this.timer = new Timer("TimerBC");
+            this.timer.scheduleAtFixedRate(new BufferTask(), 5000, 500);
+        } else {
+            timer = null;
+        }
+    }
+
+    private class BufferTask extends TimerTask {
+        @Override
+        public void run() {
+            if (!txQueue.isEmpty()) {
+                List<AionTransaction> txs = new ArrayList<>();
+                try {
+                    txQueue.drainTo(txs);
+                } catch (Throwable e) {
+                    log.error("BufferTask throw{}", e.toString());
+                }
+                if (!txs.isEmpty()) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("BufferTask add txs into pendingState:{}", txs.size());
+                    }
+
+                    pendingState.addPendingTransactions(txs);
+                }
+            }
+        }
     }
 
     @Override
@@ -74,11 +116,40 @@ public final class BroadcastTxHandler extends Handler {
             return;
 
         List<byte[]> broadCastTx = BroadcastTx.decode(_msgBytes);
-        if (broadCastTx.isEmpty()) {
+
+        if (broadCastTx == null) {
+            log.error("<BroadcastTxHandler decode-error unable to decode tx-list from {}, len: {]>", _displayId, _msgBytes.length);
+            if (log.isTraceEnabled()) {
+                log.trace("BroadcastTxHandler dump: {}", ByteUtil.toHexString(_msgBytes));
+            }
+            return;
+        } else if (broadCastTx.isEmpty()) {
+            p2pMgr.errCheck(_nodeIdHashcode, _displayId);
+
+            if (log.isTraceEnabled()) {
+                log.trace("<BroadcastTxHandler from: {} empty {}>", _displayId);
+
+            }
             return;
         }
 
-        pendingState.addPendingTransactions(castRawTx(broadCastTx));
+        if (this.buffer) {
+            try {
+                for (AionTransaction tx : castRawTx(broadCastTx)) {
+                    if (!txQueue.offer(tx)) {
+                        if (log.isTraceEnabled()) {
+                            log.trace("<BroadcastTxHandler txQueue full! {}>", _displayId);
+                        }
+                        break;
+                    }
+                }
+
+            } catch (Throwable e) {
+                log.error("BroadcastTxHandler throw {}", e.toString());
+            }
+        } else {
+            pendingState.addPendingTransactions(castRawTx(broadCastTx));
+        }
     }
 
     private List<AionTransaction> castRawTx(List<byte[]> broadCastTx) {
@@ -87,8 +158,12 @@ public final class BroadcastTxHandler extends Handler {
         for (byte[] raw : broadCastTx) {
             try {
                 AionTransaction tx = new AionTransaction(raw);
-                if (TXValidator.isValid(tx)) {
-                    rtn.add(tx);
+                if (tx.getHash() != null) {
+                    if (!TXValidator.isInCache(ByteArrayWrapper.wrap(tx.getHash()))) {
+                        if (TXValidator.isValid(tx)) {
+                            rtn.add(tx);
+                        }
+                    }
                 }
             } catch (Exception e) {
                 // do nothing, invalid transaction from bad peer
@@ -96,5 +171,13 @@ public final class BroadcastTxHandler extends Handler {
         }
 
         return rtn;
+    }
+
+    @Override
+    public void shutDown() {
+        log.info("BroadcastTxHandler shutdown!");
+        if (timer != null) {
+            timer.cancel();
+        }
     }
 }
