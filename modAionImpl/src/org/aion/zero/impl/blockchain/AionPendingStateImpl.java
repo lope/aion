@@ -149,15 +149,14 @@ public class AionPendingStateImpl implements IPendingStateInternal<AionBlock, Ai
                     AionTxReceipt rp = new AionTxReceipt();
                     rp.setTransaction(newPending.get(cnt));
                     fireTxUpdate(rp, PendingTransactionState.DROPPED, best.get());
+                } else {
+                    fireTxUpdate(summary.getReceipt(), PendingTransactionState.NEW_PENDING, best.get());
                 }
                 cnt++;
-
-                fireTxUpdate(summary.getReceipt(), PendingTransactionState.NEW_PENDING, best.get());
             }
 
             if (!txs.isEmpty() && !loadPendingTx) {
                 AionImpl.inst().broadcastTransactions(txs);
-
             }
 
             txBuffer.clear();
@@ -559,8 +558,7 @@ public class AionPendingStateImpl implements IPendingStateInternal<AionBlock, Ai
         }
 
         AionTxExecSummary txSum;
-        boolean ip = inPool(txNonce, tx.getFrom());
-        if (ip) {
+        if (inPool(txNonce, tx.getFrom())) {
             // check energy usage
             AionTransaction poolTx = txPool.getPoolTx(tx.getFrom(), txNonce);
             if (poolTx == null) {
