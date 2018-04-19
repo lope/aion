@@ -99,7 +99,6 @@ public class BlockPropagationTest {
             return map;
         }
 
-        @Override
         public INodeMgr getNodeMgr() {
             return null;
         }
@@ -124,6 +123,10 @@ public class BlockPropagationTest {
             return 0;
         }
 
+        @Override public void closeSocket(SocketChannel _sc, String _reason) {
+
+        }
+
         @Override
         public void errCheck(int nodeIdHashcode, String _displayId) {
 
@@ -144,7 +147,6 @@ public class BlockPropagationTest {
 
         }
 
-        @Override
         public void dropActive(Integer hash) {
         }
 
@@ -153,7 +155,6 @@ public class BlockPropagationTest {
             return false;
         }
 
-        @Override
         public void closeSocket(SocketChannel socket) {
             // do nothing
         }

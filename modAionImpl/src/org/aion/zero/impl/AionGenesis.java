@@ -99,7 +99,7 @@ public class AionGenesis extends AionBlock {
      * this value has been reduced to 1024 based on the heuristic data from the
      * QA1 TestNet
      */
-    protected static final byte[] GENESIS_DIFFICULTY = ByteUtil.bigIntegerToBytes(BigInteger.valueOf(1024));
+    protected static final byte[] GENESIS_DIFFICULTY = ByteUtil.bigIntegerToBytes(BigInteger.valueOf(8));
 
     /**
      * Corresponds to {@link AbstractBlockHeader#getNumber()} the number. This

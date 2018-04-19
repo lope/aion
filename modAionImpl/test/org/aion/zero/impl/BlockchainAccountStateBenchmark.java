@@ -12,8 +12,6 @@ import org.aion.zero.impl.types.AionTxInfo;
 import org.aion.zero.types.AionTransaction;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,11 +53,11 @@ public class BlockchainAccountStateBenchmark {
 
     @AfterClass
     public static void deleteFiles() {
-        File f = new File(baseTestPath);
-        if (f.exists()) {
-            FileUtils.deleteRecursively(f);
-            f.delete();
-        }
+//        File f = new File(baseTestPath);
+//        if (f.exists()) {
+//            FileUtils.deleteRecursively(f);
+//            f.delete();
+//        }
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -80,7 +78,7 @@ public class BlockchainAccountStateBenchmark {
                 .withRepoConfig(new MockRepositoryConfig(DBVendor.LEVELDB) {
                     @Override
                     public String getDbPath() {
-                        return baseTestPath + "/" + dbPaths[1];
+                        return baseTestPath + "/" + dbPaths[0];
                     }
                 })
                 .build();
@@ -110,10 +108,10 @@ public class BlockchainAccountStateBenchmark {
                 .build();
 
         return Arrays.asList(new Object[][] {
-                {"mockDb", mockBundle},
+                //{"mockDb", mockBundle},
                 {"levelDb", levelDbBundle},
-                {"rocksDb", rocksDbBundle},
-                {"h2Db", h2DbBundle}
+                //{"rocksDb", rocksDbBundle},
+                //{"h2Db", h2DbBundle}
         });
     }
 
@@ -129,23 +127,26 @@ public class BlockchainAccountStateBenchmark {
     /**
      * Test the effects of growing state of a single account
      */
-    @Ignore
+    //@Ignore
     @Test
     public void testAccountState() {
         // skipped until test can be refactored
         // TODO: we may just replace this with JMH later
-//        StandaloneBlockchain.Bundle bundle = this.bundle;
-//        StandaloneBlockchain bc = bundle.bc;
-//
-//        ECKey senderKey = bundle.privateKeys.get(0);
-//
-//        // send a total of 100 bundles,
-//        // given the rate we're sending this should give us
-//        // a 400,000 accounts (not counting the 10 pre-generated for us)
-//        AionBlock previousBlock = bc.genesis;
-//        for (int i = 0; i < 10; i++) {
-//            previousBlock = createBundleAndCheck(bc, senderKey, previousBlock);
-//        }
+        StandaloneBlockchain.Bundle bundle = this.bundle;
+        StandaloneBlockchain bc = bundle.bc;
+
+        ECKey senderKey = bundle.privateKeys.get(0);
+
+        // send a total of 100 bundles,
+        // given the rate we're sending this should give us
+        // a 400,000 accounts (not counting the 10 pre-generated for us)
+        AionBlock previousBlock = bc.genesis;
+        int target = 10_000_000;
+        while(target > 0) {
+            System.out.println("target: " + target);
+            previousBlock = createBundleAndCheck(bc, senderKey, previousBlock);
+            target -= previousBlock.getTransactionsList().size();
+        }
     }
 
     private static final byte[] ZERO_BYTE = new byte[0];
@@ -155,17 +156,24 @@ public class BlockchainAccountStateBenchmark {
 
         // create 400 transactions per bundle
         //byte[] nonce, Address to, byte[] value, byte[] data, long nrg, long nrgPrice
-        for (int i = 0; i < 400; i++) {
+        long blkNrg = parentBlock.getNrgLimit();
+        int cnt = 0;
+        while (blkNrg > 0) {
+            if (blkNrg-21000 < 0) {
+                break;
+            }
             Address destAddr = new Address(HashUtil.h256(accountNonce.toByteArray()));
             AionTransaction sendTransaction = new AionTransaction(accountNonce.toByteArray(),
                     destAddr, BigInteger.ONE.toByteArray(), ZERO_BYTE, 21000, 1);
             sendTransaction.sign(key);
             transactions.add(sendTransaction);
             accountNonce = accountNonce.add(BigInteger.ONE);
+            blkNrg -= 21000;
+            cnt++;
         }
 
         AionBlock block = bc.createNewBlock(parentBlock, transactions, true);
-        assertThat(block.getTransactionsList().size()).isEqualTo(400);
+        assertThat(block.getTransactionsList().size()).isEqualTo(cnt);
         // clear the trie
         bc.getRepository().flush();
 
@@ -180,7 +188,6 @@ public class BlockchainAccountStateBenchmark {
 
     private static final String STATE_EXPANSION_BYTECODE = "0x605060405260006001600050909055341561001a5760006000fd5b61001f565b6101688061002e6000396000f30060506040526000356c01000000000000000000000000900463ffffffff16806331e658a514610049578063549262ba1461008957806361bc221a1461009f57610043565b60006000fd5b34156100555760006000fd5b610073600480808060100135903590916020019091929050506100c9565b6040518082815260100191505060405180910390f35b34156100955760006000fd5b61009d6100eb565b005b34156100ab5760006000fd5b6100b3610133565b6040518082815260100191505060405180910390f35b6000600050602052818160005260105260306000209050600091509150505481565b6001600060005060006001600050546000825281601001526020019081526010016000209050600050819090905550600160008181505480929190600101919050909055505b565b600160005054815600a165627a7a72305820c615f3373321aa7e9c05d9a69e49508147861fb2a54f2945fbbaa7d851125fe80029";
 
-    @Ignore
     @Test
     public void testExpandOneAccountStorage() throws InterruptedException {
         try {
@@ -188,7 +195,7 @@ public class BlockchainAccountStateBenchmark {
 
             StandaloneBlockchain bc = bundle.bc;
 
-            ECKey senderKey = bundle.privateKeys.get(0);
+            ECKey senderKey = bundle.privateKeys.get(1);
 
             // deploy contract
             Pair<AionBlock, byte[]> res = createContract(bc, senderKey, bc.getGenesis());
@@ -203,8 +210,13 @@ public class BlockchainAccountStateBenchmark {
             System.out.println("deployed contract code: " + ByteUtil.toHexString(contractCode));
             System.out.println("deployed at: " + contractAddress);
 
-            for (int i = 0; i < 100; i++)
+            int target = 5_000_000;
+            while(target > 0) {
+                System.out.println("target: " + target);
                 createContractBundle(bc, senderKey, bc.getBestBlock(), contractAddress);
+                target -= 133;
+            }
+
         } catch (Throwable t) {
             t.printStackTrace();
         } finally {

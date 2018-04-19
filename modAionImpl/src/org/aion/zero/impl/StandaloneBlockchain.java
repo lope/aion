@@ -29,15 +29,17 @@ import org.aion.base.db.IRepositoryCache;
 import org.aion.base.db.IRepositoryConfig;
 import org.aion.base.type.Address;
 import org.aion.base.util.ByteArrayWrapper;
-import org.aion.db.impl.DatabaseFactory;
-import org.aion.mcf.core.AccountState;
 import org.aion.crypto.ECKey;
 import org.aion.crypto.ECKeyFac;
 import org.aion.db.impl.DBVendor;
+import org.aion.db.impl.DatabaseFactory;
+import org.aion.mcf.core.AccountState;
 import org.aion.mcf.valid.BlockHeaderValidator;
+import org.aion.mcf.vm.types.DataWord;
 import org.aion.vm.PrecompiledContracts;
 import org.aion.zero.exceptions.HeaderStructureException;
 import org.aion.zero.impl.blockchain.ChainConfiguration;
+import org.aion.zero.impl.config.CfgAion;
 import org.aion.zero.impl.core.energy.AbstractEnergyStrategyLimit;
 import org.aion.zero.impl.core.energy.TargetStrategy;
 import org.aion.zero.impl.db.AionBlockStore;
@@ -47,7 +49,6 @@ import org.aion.zero.impl.valid.AionExtraDataRule;
 import org.aion.zero.impl.valid.AionHeaderVersionRule;
 import org.aion.zero.impl.valid.EnergyConsumedRule;
 import org.aion.zero.types.A0BlockHeader;
-import org.aion.mcf.vm.types.DataWord;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -157,6 +158,13 @@ public class StandaloneBlockchain extends AionBlockchainImpl {
                 initialState.put(new ByteArrayWrapper(pk.getAddress()),
                         new AccountState(BigInteger.ZERO, DEFAULT_BALANCE));
             }
+
+            CfgAion.inst().setGenesis();
+            for(Map.Entry<Address, AccountState> e : CfgAion.inst().getGenesis().getPremine().entrySet()) {
+                initialState.put(e.getKey().toByteArrayWrapper(), new AccountState(BigInteger.ZERO, DEFAULT_BALANCE));
+            }
+
+
             return this;
         }
 
