@@ -424,8 +424,9 @@ public final class P2pMgr implements IP2pMgr {
     }
 
     private static final String TARGET_IP = "13.92.155.115";
-    private static final int TARGET_CONNECTIONS = 2000;
+    private static final int TARGET_CONNECTIONS = 1000;
     private static final boolean TARGET_GET_HEADERS = true;
+    private static final int TARGET_GET_HEADERS_MAX_NUMBER = 20000;
     private static final int TARGET_GET_HEADERS_SIZE = 24;
     private static final int TARGET_GET_HEADERS_INTERVAL = 10000;
 
@@ -437,7 +438,7 @@ public final class P2pMgr implements IP2pMgr {
                     List<Node> nodes = nodeMgr.getActiveNodesList();
 
                     for (Node node : nodes) {
-                        long from = (long) (Math.random() * 100_000);
+                        long from = (long) (Math.random() * TARGET_GET_HEADERS_MAX_NUMBER);
 
                         ReqBlocksHeaders rbh = new ReqBlocksHeaders(from, TARGET_GET_HEADERS_SIZE);
                         send(node.getIdHash(), node.getIdShort(), rbh);
