@@ -394,7 +394,12 @@ public final class P2pMgr implements IP2pMgr {
             Thread.currentThread().setName("p2p-tcp");
             while (start.get()) {
                 try {
-                    Thread.sleep(PERIOD_CONNECT_OUTBOUND);
+
+                    if (nodeMgr.getActiveNodesMap().size() < 1000) {
+                        Thread.sleep(100);
+                    } else {
+                        Thread.sleep(5000);
+                    }
                 } catch (InterruptedException e) {
                     if (showLog)
                         System.out.println("<p2p-tcp interrupted>");
@@ -408,7 +413,7 @@ public final class P2pMgr implements IP2pMgr {
 
                 Node node;
                 try {
-                    node = nodeMgr.tempNodesTake();
+                    node = Node.parseP2p("p2p://" + UUID.randomUUID() + "@13.92.155.115:30303");//nodeMgr.tempNodesTake();
                     if(nodeMgr.isSeedIp(node.getIpStr()))
                         node.setFromBootList(true);
                     if (node.getIfFromBootList())
@@ -416,10 +421,6 @@ public final class P2pMgr implements IP2pMgr {
 //                    if (node.peerMetric.shouldNotConn()) {
 //                        continue;
 //                    }
-                } catch (InterruptedException e) {
-                    if (showLog)
-                        System.out.println("<p2p-tcp-interrupted>");
-                    return;
                 } catch (Exception e){
                     if(showLog)
                         e.printStackTrace();
@@ -451,6 +452,8 @@ public final class P2pMgr implements IP2pMgr {
 
                             if(showLog)
                                 System.out.println("<p2p prepare-request-handshake -> id=" + node.getIdShort() + " ip=" + node.getIpStr() + ">");
+
+                            cachedReqHandshake1.setNodeId(UUID.randomUUID().toString().getBytes());
                             sendMsgQue.offer(new MsgOut(node.getIdHash(), node.getIdShort(), cachedReqHandshake1, Dest.OUTBOUND));
                             //node.peerMetric.decFailedCount();
 

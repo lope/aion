@@ -60,6 +60,10 @@ public class ReqHandshake extends Msg {
         return this.nodeId;
     }
 
+    public void setNodeId(byte[] _nodeId) {
+        this.nodeId = _nodeId;
+    }
+
     public int getNetId() {
         return this.netId;
     }
