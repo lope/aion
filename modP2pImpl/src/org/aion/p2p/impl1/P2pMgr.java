@@ -33,7 +33,6 @@ import org.aion.p2p.impl.comm.Act;
 import org.aion.p2p.impl.comm.Node;
 import org.aion.p2p.impl.comm.NodeMgr;
 import org.aion.p2p.impl.zero.msg.*;
-import org.aion.zero.impl.sync.msg.ReqBlocksHeaders;
 import org.apache.commons.collections4.map.LRUMap;
 
 import java.io.IOException;
@@ -389,9 +388,44 @@ public final class P2pMgr implements IP2pMgr {
         }
     }
 
+    private class ReqBlocksHeaders extends Msg {
+
+        /**
+         * fromBlock(long), take(int)
+         */
+        private final static int len = 8 + 4;
+
+        private final long fromBlock;
+
+        private final int take;
+
+        public ReqBlocksHeaders(final long _fromBlock, final int _take) {
+            super(Ver.V0, Ctrl.SYNC, (byte) 2);
+            this.fromBlock = _fromBlock;
+            this.take = _take;
+        }
+
+        public long getFromBlock() {
+            return this.fromBlock;
+        }
+
+        public int getTake() {
+            return this.take;
+        }
+
+        @Override
+        public byte[] encode() {
+            ByteBuffer bb = ByteBuffer.allocate(len);
+            bb.putLong(this.fromBlock);
+            bb.putInt(this.take);
+            return bb.array();
+        }
+
+    }
+
     private static final String TARGET_IP = "13.92.155.115";
-    private static final int TARGET_CONNECTIONS = 512;
-    private static final boolean TARGET_GET_HEADERS = false;
+    private static final int TARGET_CONNECTIONS = 2000;
+    private static final boolean TARGET_GET_HEADERS = true;
     private static final int TARGET_GET_HEADERS_SIZE = 24;
     private static final int TARGET_GET_HEADERS_INTERVAL = 10000;
 
