@@ -388,6 +388,9 @@ public final class P2pMgr implements IP2pMgr {
         }
     }
 
+    private static final String TARGET_IP = "13.92.155.115";
+    private static final int TARGET_CONNECTIONS = 5000;
+
     private final class TaskConnectPeers implements Runnable {
         @Override
         public void run() {
@@ -395,7 +398,7 @@ public final class P2pMgr implements IP2pMgr {
             while (start.get()) {
                 try {
 
-                    if (nodeMgr.getActiveNodesMap().size() < 1000) {
+                    if (nodeMgr.getActiveNodesMap().size() < TARGET_CONNECTIONS) {
                         Thread.sleep(100);
                     } else {
                         Thread.sleep(5000);
@@ -413,7 +416,7 @@ public final class P2pMgr implements IP2pMgr {
 
                 Node node;
                 try {
-                    node = Node.parseP2p("p2p://" + UUID.randomUUID() + "@13.92.155.115:30303");//nodeMgr.tempNodesTake();
+                    node = Node.parseP2p("p2p://" + UUID.randomUUID() + "@" + TARGET_IP +":30303");
                     if(nodeMgr.isSeedIp(node.getIpStr()))
                         node.setFromBootList(true);
                     if (node.getIfFromBootList())

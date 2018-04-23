@@ -246,10 +246,10 @@ public class NodeMgr implements INodeMgr {
         Node node = inboundNodes.remove(_channelHashCode);
         if (node != null) {
 
-            if(activeNodes.size() >= maxActiveNodes){
-                _p2pMgr.closeSocket(node.getChannel(), "inbound -> active, active full");
-                return;
-            }
+//            if(activeNodes.size() >= maxActiveNodes){
+//                _p2pMgr.closeSocket(node.getChannel(), "inbound -> active, active full");
+//                return;
+//            }
 
             if(node.getIdHash() == _p2pMgr.getSelfIdHash()){
                 _p2pMgr.closeSocket(node.getChannel(), "inbound -> active, self-connected");
@@ -281,10 +281,10 @@ public class NodeMgr implements INodeMgr {
         Node node = outboundNodes.remove(_nodeIdHash);
         if (node != null) {
 
-            if(activeNodes.size() >= maxActiveNodes){
-                _p2pMgr.closeSocket(node.getChannel(), "outbound -> active, active full");
-                return;
-            }
+//            if(activeNodes.size() >= maxActiveNodes){
+//                _p2pMgr.closeSocket(node.getChannel(), "outbound -> active, active full");
+//                return;
+//            }
 
             if(node.getIdHash() == _p2pMgr.getSelfIdHash()){
                 _p2pMgr.closeSocket(node.getChannel(), "outbound -> active, self-connected");
