@@ -219,7 +219,7 @@ public final class P2pMgr implements IP2pMgr {
                             // check if really read data.
                             if (cnt > prevCnt) {
                                 chanBuf.buffRemain = 0;
-                                throw new P2pException(
+                                throw new IOException(
                                         "IO read overflow!  suppose read:" + prevCnt + " real left:" + cnt);
                             }
 
@@ -243,17 +243,11 @@ public final class P2pMgr implements IP2pMgr {
                         } catch (NullPointerException e) {
                             closeSocket((SocketChannel) sk.channel(), chanBuf.displayId + "-read-msg-null-exception");
                             chanBuf.isClosed.set(true);
-                        } catch (P2pException e) {
-                            closeSocket((SocketChannel) sk.channel(), chanBuf.displayId + "-read-msg-p2p-exception");
-                            chanBuf.isClosed.set(true);
-
                         } catch (ClosedChannelException e) {
                             closeSocket((SocketChannel) sk.channel(), chanBuf.displayId + "-read-msg-closed-channel-exception");
-
                         } catch (IOException e) {
                             closeSocket((SocketChannel) sk.channel(), chanBuf.displayId + "-read-msg-io-exception: " + e.getMessage());
                             chanBuf.isClosed.set(true);
-
                         } catch (CancelledKeyException e) {
                             chanBuf.isClosed.set(true);
                             closeSocket((SocketChannel) sk.channel(), chanBuf.displayId + "-read-msg-key-cancelled-exception");
@@ -700,7 +694,7 @@ public final class P2pMgr implements IP2pMgr {
         int currCnt = 0;
 
         if (_sk.attachment() == null) {
-            throw new P2pException("attachment is null");
+            throw new IOException("attachment is null");
         }
         ChannelBuffer rb = (ChannelBuffer) _sk.attachment();
 
