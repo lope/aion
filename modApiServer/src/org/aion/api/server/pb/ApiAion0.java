@@ -1437,7 +1437,7 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                                 LOG.error("BlockSqlByRange: missing DB transaction: " + ByteUtil.toHexString(tx.getHash()));
                             }
                             else {
-                                transactionSql.add(generateTransactionSqlStatement(b, tx, r.getLogInfoList(), j, r.getEnergyUsed()));
+                                transactionSql.add(generateTransactionSqlStatement(b, tx, r, j));
                             }
                         }
                     } else {
@@ -1453,7 +1453,7 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                                         LOG.error("BlockSqlByRange: missing DB transaction: " + ByteUtil.toHexString(tx.getHash()));
                                         return null;
                                     } else {
-                                        return generateTransactionSqlStatement(b, tx, ti.getReceipt().getLogInfoList(), ti.getIndex(), ti.getReceipt().getEnergyUsed());
+                                        return generateTransactionSqlStatement(b, tx, ti.getReceipt(), ti.getIndex());
                                     }
                                 }).filter(Objects::nonNull)
                                 .collect(Collectors.toList());
@@ -1785,7 +1785,17 @@ public class ApiAion0 extends ApiAion implements IApiAion {
         return stmt;
     }
 
-    private String generateTransactionSqlStatement(AionBlock b, AionTransaction t, List<Log> _logs, int txIndex, long nrgConsumed) {
+    private String generateTransactionSqlStatement(AionBlock b, AionTransaction t, AionTxReceipt r, int txIndex) {
+        List<Log> _logs = new ArrayList<>();
+        long nrgConsumed = 0L;
+        String error = "";
+
+        if (r != null) {
+            _logs = r.getLogInfoList();
+            nrgConsumed = r.getEnergyUsed();
+            error = r.getError();
+        }
+
         JSONArray logs = new JSONArray();
         for (Log l : _logs) {
             JSONArray log = new JSONArray();
@@ -1822,6 +1832,8 @@ public class ApiAion0 extends ApiAion implements IApiAion {
             data text,
             nonce text,
 
+            error text,
+
             primary key(block_number,transaction_index));
          */
 
@@ -1845,7 +1857,9 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                 "'"+logs.toString()+"',"+
 
                 "'"+ByteUtil.toHexString(t.getData())+"',"+
-                "'"+ByteUtil.toHexString(t.getNonce())+"'";
+                "'"+ByteUtil.toHexString(t.getNonce())+"',"+
+
+                "'"+error+"'";
 
         return stmt;
     }
