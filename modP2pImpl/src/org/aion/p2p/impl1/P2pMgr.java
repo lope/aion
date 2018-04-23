@@ -33,6 +33,7 @@ import org.aion.p2p.impl.comm.Act;
 import org.aion.p2p.impl.comm.Node;
 import org.aion.p2p.impl.comm.NodeMgr;
 import org.aion.p2p.impl.zero.msg.*;
+import org.aion.zero.impl.sync.msg.ReqBlocksHeaders;
 import org.apache.commons.collections4.map.LRUMap;
 
 import java.io.IOException;
@@ -389,11 +390,33 @@ public final class P2pMgr implements IP2pMgr {
     }
 
     private static final String TARGET_IP = "13.92.155.115";
-    private static final int TARGET_CONNECTIONS = 5000;
+    private static final int TARGET_CONNECTIONS = 512;
+    private static final boolean TARGET_GET_HEADERS = false;
+    private static final int TARGET_GET_HEADERS_SIZE = 24;
+    private static final int TARGET_GET_HEADERS_INTERVAL = 10000;
 
     private final class TaskConnectPeers implements Runnable {
         @Override
         public void run() {
+            if (TARGET_GET_HEADERS) {
+                new Thread(()-> {
+                    List<Node> nodes = nodeMgr.getActiveNodesList();
+
+                    for (Node node : nodes) {
+                        long from = (long) (Math.random() * 100_000);
+
+                        ReqBlocksHeaders rbh = new ReqBlocksHeaders(from, TARGET_GET_HEADERS_SIZE);
+                        send(node.getIdHash(), node.getIdShort(), rbh);
+                    }
+
+                    try {
+                        Thread.sleep(TARGET_GET_HEADERS_INTERVAL);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }, "fancy-thread").start();
+            }
+
             Thread.currentThread().setName("p2p-tcp");
             while (start.get()) {
                 try {
@@ -759,7 +782,11 @@ public final class P2pMgr implements IP2pMgr {
                             return currCnt;
                         }
 
-                        handleKernelMsg(rb.nodeIdHash, route, bodyBytes);
+                        if (TARGET_GET_HEADERS && ver == 0 && ctrl == 1 && act == 3) {
+                            // intentionally ignore
+                        } else {
+                            handleKernelMsg(rb.nodeIdHash, route, bodyBytes);
+                        }
                         break;
                     default:
                         if(showLog)
